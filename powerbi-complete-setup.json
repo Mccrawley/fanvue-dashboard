@@ -1,0 +1,170 @@
+{
+  "agency_summary": {
+    "total_creators": 15,
+    "total_subscribers": 2250,
+    "total_followers": 900,
+    "total_earnings_records": 750
+  },
+  "api_base_url": "http://localhost:3000/api",
+  "creators": [
+    {
+      "name": "Ellie May",
+      "handle": "ellalxox",
+      "uuid": "e507b598-4347-4ea5-b27d-4367ea351ab9",
+      "subscribers": 150,
+      "followers": 0,
+      "earnings_records": 50
+    },
+    {
+      "name": "Carys",
+      "handle": "carysxtina", 
+      "uuid": "17518d3b-bc7f-46db-a0df-b9c03975d398",
+      "subscribers": 150,
+      "followers": 0,
+      "earnings_records": 50
+    },
+    {
+      "name": "Léo",
+      "handle": "leofootball",
+      "uuid": "e5fc0d81-6be8-443f-a0f5-7a748ad5f31a",
+      "subscribers": 150,
+      "followers": 150,
+      "earnings_records": 50
+    },
+    {
+      "name": "Molly",
+      "handle": "molly-carter",
+      "uuid": "40cc4f29-58d1-44b7-854b-d92ec42c02f7",
+      "subscribers": 150,
+      "followers": 0,
+      "earnings_records": 50
+    },
+    {
+      "name": "Mai",
+      "handle": "maisxlife",
+      "uuid": "c38f955d-7c07-4b6c-a3e0-4229a2f90bbd",
+      "subscribers": 150,
+      "followers": 0,
+      "earnings_records": 50
+    },
+    {
+      "name": "Ava",
+      "handle": "ava-harrington",
+      "uuid": "79d3fb50-d9c8-4c61-9397-c74d80cc4842",
+      "subscribers": 150,
+      "followers": 0,
+      "earnings_records": 50
+    },
+    {
+      "name": "Lotti",
+      "handle": "lotti-palmer",
+      "uuid": "56661e6c-c050-495e-a041-3fccd022ffe3",
+      "subscribers": 150,
+      "followers": 150,
+      "earnings_records": 50
+    },
+    {
+      "name": "Aurora Fox",
+      "handle": "aurora_fox",
+      "uuid": "c35c787e-2dad-4499-9ac5-c60c38b63a9a",
+      "subscribers": 150,
+      "followers": 0,
+      "earnings_records": 50
+    },
+    {
+      "name": "Poppy Grace",
+      "handle": "poppy_grace",
+      "uuid": "51c20349-8272-4f32-9e43-fe8743fe5d65",
+      "subscribers": 150,
+      "followers": 150,
+      "earnings_records": 50
+    },
+    {
+      "name": "Penny Lane",
+      "handle": "penny_lane",
+      "uuid": "8654ea2c-7128-4cb1-84b2-941e4a5f7c87",
+      "subscribers": 150,
+      "followers": 0,
+      "earnings_records": 50
+    },
+    {
+      "name": "Talia Rose",
+      "handle": "talia_rose",
+      "uuid": "5c9e3d70-c752-4fa3-9f04-0e22e264bb60",
+      "subscribers": 150,
+      "followers": 0,
+      "earnings_records": 50
+    },
+    {
+      "name": "Summer Skye",
+      "handle": "summer_skye",
+      "uuid": "7ef0022d-71b8-4f54-ba80-126266eaa355",
+      "subscribers": 150,
+      "followers": 150,
+      "earnings_records": 50
+    },
+    {
+      "name": "Lottie Moss",
+      "handle": "lottie_moss",
+      "uuid": "40faa77e-50dd-4f44-a7f9-68b4fd62ae9a",
+      "subscribers": 150,
+      "followers": 150,
+      "earnings_records": 50
+    },
+    {
+      "name": "Amara Rayne",
+      "handle": "amara_rayne",
+      "uuid": "a55ffd02-799b-40d8-9b78-06493f6eaebb",
+      "subscribers": 150,
+      "followers": 150,
+      "earnings_records": 50
+    },
+    {
+      "name": "Jaws",
+      "handle": "jaws",
+      "uuid": "42f1f84d-2929-490d-81e8-33fb2fa5782e",
+      "subscribers": 150,
+      "followers": 150,
+      "earnings_records": 50
+    }
+  ],
+  "powerbi_data_sources": {
+    "main_sources": [
+      {
+        "name": "All_Creators",
+        "url": "http://localhost:3000/api/creators?page=1&size=15",
+        "refresh_frequency": "Daily",
+        "description": "Complete list of all 15 creators"
+      }
+    ],
+    "creator_specific_sources": [
+      {
+        "name": "Creator_Earnings",
+        "url_template": "http://localhost:3000/api/creators/{uuid}/earnings?startDate=2025-01-01&endDate=2025-12-31&maxPages=10",
+        "refresh_frequency": "Daily",
+        "description": "Earnings data for each creator (replace {uuid})"
+      },
+      {
+        "name": "Creator_Subscribers", 
+        "url_template": "http://localhost:3000/api/creators/{uuid}/subscribers?page=1&size=50",
+        "refresh_frequency": "Daily",
+        "description": "Subscriber data for each creator (replace {uuid})"
+      },
+      {
+        "name": "Creator_Followers",
+        "url_template": "http://localhost:3000/api/creators/{uuid}/followers?page=1&size=50", 
+        "refresh_frequency": "Daily",
+        "description": "Follower data for each creator (replace {uuid})"
+      }
+    ]
+  },
+  "recommended_visualizations": [
+    "Total subscribers by creator (2250 total)",
+    "Total followers by creator (900 total)", 
+    "Earnings trends over time (750 records)",
+    "Creator performance comparison",
+    "Monthly revenue dashboard",
+    "Top performing creators",
+    "Subscriber growth trends"
+  ]
+} 

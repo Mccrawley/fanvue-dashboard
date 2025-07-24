@@ -1,0 +1,69 @@
+{
+  "api_base_url": "http://localhost:3000/api",
+  "endpoints": {
+    "creators": {
+      "url": "/creators",
+      "method": "GET",
+      "parameters": {
+        "page": "1",
+        "size": "15"
+      },
+      "description": "Get all creators in your agency"
+    },
+    "creator_earnings": {
+      "url": "/creators/{creatorUuid}/earnings",
+      "method": "GET",
+      "parameters": {
+        "startDate": "2025-01-01",
+        "endDate": "2025-12-31",
+        "maxPages": "10"
+      },
+      "description": "Get earnings for a specific creator"
+    },
+    "creator_followers": {
+      "url": "/creators/{creatorUuid}/followers",
+      "method": "GET",
+      "parameters": {
+        "page": "1",
+        "size": "50"
+      },
+      "description": "Get followers for a specific creator"
+    },
+    "creator_subscribers": {
+      "url": "/creators/{creatorUuid}/subscribers",
+      "method": "GET",
+      "parameters": {
+        "page": "1",
+        "size": "50"
+      },
+      "description": "Get subscribers for a specific creator"
+    }
+  },
+  "powerbi_setup": {
+    "data_sources": [
+      {
+        "name": "Creators",
+        "url": "http://localhost:3000/api/creators?page=1&size=15",
+        "refresh_frequency": "Daily"
+      },
+      {
+        "name": "Creator_Earnings",
+        "url": "http://localhost:3000/api/creators/{creatorUuid}/earnings?startDate=2025-01-01&endDate=2025-12-31&maxPages=10",
+        "refresh_frequency": "Daily",
+        "note": "Replace {creatorUuid} with actual creator UUIDs"
+      },
+      {
+        "name": "Creator_Subscribers",
+        "url": "http://localhost:3000/api/creators/{creatorUuid}/subscribers?page=1&size=50",
+        "refresh_frequency": "Daily",
+        "note": "Replace {creatorUuid} with actual creator UUIDs"
+      }
+    ],
+    "recommended_visualizations": [
+      "Total subscribers by creator",
+      "Earnings trends over time",
+      "Creator performance comparison",
+      "Monthly revenue dashboard"
+    ]
+  }
+} 
