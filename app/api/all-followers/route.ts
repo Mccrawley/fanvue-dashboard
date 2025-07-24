@@ -10,6 +10,7 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3)
         throw new Error(`Rate limit exceeded after ${maxRetries} retries`);
       }
       
+      // Exponential backoff: 2s, 4s, 8s
       const delay = Math.pow(2, attempt + 1) * 1000;
       console.log(`Rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries + 1})`);
       await new Promise(resolve => setTimeout(resolve, delay));
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
 
     // Extract query parameters
     const { searchParams } = new URL(request.url);
-    const maxPages = parseInt(searchParams.get("maxPages") || "3");
+    const maxPages = parseInt(searchParams.get("maxPages") || "5");
 
     // Get all creators (up to 50)
     const creatorsResponse = await fetchWithRetry("https://api.fanvue.com/creators?page=1&size=50", {
@@ -49,26 +50,30 @@ export async function GET(request: NextRequest) {
     });
 
     if (!creatorsResponse.ok) {
+      const errorText = await creatorsResponse.text();
+      console.error("Fanvue API error:", creatorsResponse.status, errorText);
       return NextResponse.json(
-        { error: "Failed to fetch creators" },
+        { error: `Fanvue API error: ${creatorsResponse.status}` },
         { status: creatorsResponse.status }
       );
     }
 
-    const creatorsData = await creatorsResponse.json();
-    const creators = creatorsData.data || [];
-
-    // Fetch followers for each creator
+    const creators = (await creatorsResponse.json()).data || [];
     const allFollowers: any[] = [];
 
+    // Fetch followers for each creator
     for (const creator of creators) {
       try {
-        let creatorFollowers: any[] = [];
         let page = 1;
-        let hasMore = true;
+        let hasMorePages = true;
 
-        while (hasMore && page <= maxPages) {
-          const followersUrl = `https://api.fanvue.com/creators/${creator.uuid}/followers?page=${page}&size=50`;
+        while (hasMorePages && page <= maxPages) {
+          // Build query parameters for creator followers
+          const queryParams = new URLSearchParams();
+          queryParams.append("page", page.toString());
+          queryParams.append("size", "50");
+
+          const followersUrl = `https://api.fanvue.com/creators/${creator.uuid}/followers?${queryParams}`;
 
           const followersResponse = await fetchWithRetry(followersUrl, {
             method: "GET",
@@ -81,43 +86,35 @@ export async function GET(request: NextRequest) {
 
           if (followersResponse.ok) {
             const followersData = await followersResponse.json();
-            
+            const followers = followersData.data || [];
+
             // Add creator info to each follower record
-            const followersWithCreator = (followersData.data || []).map((follower: any) => ({
+            const followersWithCreator = followers.map((follower: any) => ({
               ...follower,
               creatorUuid: creator.uuid,
-              creatorName: creator.displayName,
+              creatorName: creator.name,
               creatorHandle: creator.handle
             }));
 
-            creatorFollowers = [...creatorFollowers, ...followersWithCreator];
-            
-            hasMore = followersData.pagination?.hasMore || false;
-            page++;
+            allFollowers.push(...followersWithCreator);
 
-            // Add small delay between requests
-            if (hasMore && page <= maxPages) {
-              await new Promise(resolve => setTimeout(resolve, 100));
-            }
+            // Check if there are more pages
+            hasMorePages = followersData.pagination?.hasNextPage && followers.length > 0;
+            page++;
           } else {
-            console.error(`Failed to fetch followers for ${creator.displayName}:`, followersResponse.status);
+            console.error(`Error fetching followers for creator ${creator.uuid}:`, followersResponse.status);
             break;
           }
         }
-
-        allFollowers.push(...creatorFollowers);
-        
-        // Add delay between creators to be rate-limit friendly
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
       } catch (error) {
-        console.error(`Error fetching followers for ${creator.displayName}:`, error);
+        console.error(`Error processing creator ${creator.uuid}:`, error);
+        continue;
       }
     }
 
     return NextResponse.json({
       data: allFollowers,
-      totalCount: allFollowers.length,
+      totalRecords: allFollowers.length,
       creatorsProcessed: creators.length
     });
 

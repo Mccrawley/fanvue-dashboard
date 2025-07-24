@@ -10,6 +10,7 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3)
         throw new Error(`Rate limit exceeded after ${maxRetries} retries`);
       }
       
+      // Exponential backoff: 2s, 4s, 8s
       const delay = Math.pow(2, attempt + 1) * 1000;
       console.log(`Rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries + 1})`);
       await new Promise(resolve => setTimeout(resolve, delay));
@@ -36,8 +37,8 @@ export async function GET(request: NextRequest) {
 
     // Extract query parameters
     const { searchParams } = new URL(request.url);
-    let startDate = searchParams.get("startDate") || "2025-01-01";
-    let endDate = searchParams.get("endDate") || "2025-12-31";
+    let startDate = searchParams.get("startDate");
+    let endDate = searchParams.get("endDate");
     const maxPages = parseInt(searchParams.get("maxPages") || "5");
 
     // Convert date to ISO datetime format if only date is provided
@@ -59,30 +60,29 @@ export async function GET(request: NextRequest) {
     });
 
     if (!creatorsResponse.ok) {
+      const errorText = await creatorsResponse.text();
+      console.error("Fanvue API error:", creatorsResponse.status, errorText);
       return NextResponse.json(
-        { error: "Failed to fetch creators" },
+        { error: `Fanvue API error: ${creatorsResponse.status}` },
         { status: creatorsResponse.status }
       );
     }
 
-    const creatorsData = await creatorsResponse.json();
-    const creators = creatorsData.data || [];
-
-    // Fetch earnings for each creator
+    const creators = (await creatorsResponse.json()).data || [];
     const allEarnings: any[] = [];
 
+    // Fetch earnings for each creator
     for (const creator of creators) {
       try {
-        let creatorEarnings: any[] = [];
-        let cursor: string | null = null;
-        let hasMore = true;
-        let pageCount = 0;
+        let page = 1;
+        let hasMorePages = true;
 
-        while (hasMore && pageCount < maxPages) {
+        while (hasMorePages && page <= maxPages) {
+          // Build query parameters for creator earnings
           const queryParams = new URLSearchParams();
           if (startDate) queryParams.append("startDate", startDate);
           if (endDate) queryParams.append("endDate", endDate);
-          if (cursor) queryParams.append("cursor", cursor);
+          queryParams.append("page", page.toString());
           queryParams.append("size", "50");
 
           const earningsUrl = `https://api.fanvue.com/creators/${creator.uuid}/insights/earnings?${queryParams}`;
@@ -98,44 +98,35 @@ export async function GET(request: NextRequest) {
 
           if (earningsResponse.ok) {
             const earningsData = await earningsResponse.json();
-            
+            const earnings = earningsData.data || [];
+
             // Add creator info to each earnings record
-            const earningsWithCreator = (earningsData.data || []).map((earning: any) => ({
+            const earningsWithCreator = earnings.map((earning: any) => ({
               ...earning,
               creatorUuid: creator.uuid,
-              creatorName: creator.displayName,
+              creatorName: creator.name,
               creatorHandle: creator.handle
             }));
 
-            creatorEarnings = [...creatorEarnings, ...earningsWithCreator];
-            
-            cursor = earningsData.nextCursor;
-            hasMore = !!cursor;
-            pageCount++;
+            allEarnings.push(...earningsWithCreator);
 
-            // Add small delay between requests
-            if (hasMore && pageCount < maxPages) {
-              await new Promise(resolve => setTimeout(resolve, 100));
-            }
+            // Check if there are more pages
+            hasMorePages = earningsData.pagination?.hasNextPage && earnings.length > 0;
+            page++;
           } else {
-            console.error(`Failed to fetch earnings for ${creator.displayName}:`, earningsResponse.status);
+            console.error(`Error fetching earnings for creator ${creator.uuid}:`, earningsResponse.status);
             break;
           }
         }
-
-        allEarnings.push(...creatorEarnings);
-        
-        // Add delay between creators to be rate-limit friendly
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
       } catch (error) {
-        console.error(`Error fetching earnings for ${creator.displayName}:`, error);
+        console.error(`Error processing creator ${creator.uuid}:`, error);
+        continue;
       }
     }
 
     return NextResponse.json({
       data: allEarnings,
-      totalCount: allEarnings.length,
+      totalRecords: allEarnings.length,
       creatorsProcessed: creators.length,
       dateRange: { startDate, endDate }
     });
