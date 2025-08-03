@@ -53,6 +53,16 @@ export async function GET(request: NextRequest) {
     let endDate = searchParams.get("endDate");
     const maxPages = parseInt(searchParams.get("maxPages") || "5");
 
+    // Default to 2025 if no start date provided
+    if (!startDate) {
+      startDate = "2025-01-01";
+    }
+    
+    // Default to current date if no end date provided
+    if (!endDate) {
+      endDate = new Date().toISOString().split('T')[0];
+    }
+
     // Convert date to ISO datetime format if only date is provided
     if (startDate && !startDate.includes('T')) {
       startDate = `${startDate}T00:00:00.000Z`;
@@ -112,13 +122,19 @@ export async function GET(request: NextRequest) {
             const earningsData = await earningsResponse.json();
             const earnings = earningsData.data || [];
 
-            // Add creator info to each earnings record
-            const earningsWithCreator = earnings.map((earning: any) => ({
-              ...earning,
-              creatorUuid: creator.uuid,
-              creatorName: creator.name,
-              creatorHandle: creator.handle
-            }));
+            // Add creator info to each earnings record and filter for 2025 data only
+            const earningsWithCreator = earnings
+              .filter((earning: any) => {
+                // Only include earnings from 2025 onwards
+                const earningDate = new Date(earning.date);
+                return earningDate.getFullYear() >= 2025;
+              })
+              .map((earning: any) => ({
+                ...earning,
+                creatorUuid: creator.uuid,
+                creatorName: creator.name,
+                creatorHandle: creator.handle
+              }));
 
             allEarnings.push(...earningsWithCreator);
 
