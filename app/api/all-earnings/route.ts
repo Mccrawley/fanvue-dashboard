@@ -174,18 +174,26 @@ export async function GET(request: NextRequest) {
     console.log(`Creators processed: ${creators.length}`);
     console.log(`Date range: ${startDate} to ${endDate}`);
     console.log(`Sample dates:`, allEarnings.slice(0, 5).map(e => e.date));
+    console.log(`Current date: ${new Date().toISOString()}`);
+    console.log(`Filtering year: >= 2025`);
+    console.log(`All earnings data:`, allEarnings.slice(0, 3));
     
     const jsonResponse = NextResponse.json({
       data: allEarnings,
       totalRecords: allEarnings.length,
       creatorsProcessed: creators.length,
-      dateRange: { startDate, endDate }
+      dateRange: { startDate, endDate },
+      timestamp: new Date().toISOString(),
+      cacheBuster: Math.random()
     });
     
-    // Add CORS headers
+    // Add CORS headers and cache control
     jsonResponse.headers.set('Access-Control-Allow-Origin', '*');
     jsonResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     jsonResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    jsonResponse.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    jsonResponse.headers.set('Pragma', 'no-cache');
+    jsonResponse.headers.set('Expires', '0');
     
     return jsonResponse;
 
