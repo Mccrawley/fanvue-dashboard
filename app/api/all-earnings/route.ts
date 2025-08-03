@@ -127,7 +127,9 @@ export async function GET(request: NextRequest) {
               .filter((earning: any) => {
                 // Only include earnings from 2025 onwards
                 const earningDate = new Date(earning.date);
-                return earningDate.getFullYear() >= 2025;
+                const year = earningDate.getFullYear();
+                console.log(`Filtering earning date: ${earning.date}, year: ${year}, included: ${year >= 2025}`);
+                return year >= 2025;
               })
               .map((earning: any) => ({
                 ...earning,
