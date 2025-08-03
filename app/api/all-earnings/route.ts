@@ -123,13 +123,26 @@ export async function GET(request: NextRequest) {
             const earnings = earningsData.data || [];
 
             // Add creator info to each earnings record and filter for 2025 data only
+            console.log(`Processing ${earnings.length} earnings for creator ${creator.handle}`);
+            
             const earningsWithCreator = earnings
               .filter((earning: any) => {
                 // Only include earnings from 2025 onwards
+                if (!earning.date) {
+                  console.log(`No date found for earning:`, earning);
+                  return false;
+                }
+                
                 const earningDate = new Date(earning.date);
+                if (isNaN(earningDate.getTime())) {
+                  console.log(`Invalid date: ${earning.date}`);
+                  return false;
+                }
+                
                 const year = earningDate.getFullYear();
-                console.log(`Filtering earning date: ${earning.date}, year: ${year}, included: ${year >= 2025}`);
-                return year >= 2025;
+                const isIncluded = year >= 2025;
+                console.log(`Filtering earning date: ${earning.date}, year: ${year}, included: ${isIncluded}`);
+                return isIncluded;
               })
               .map((earning: any) => ({
                 ...earning,
@@ -137,6 +150,8 @@ export async function GET(request: NextRequest) {
                 creatorName: creator.name,
                 creatorHandle: creator.handle
               }));
+            
+            console.log(`After filtering: ${earningsWithCreator.length} earnings for creator ${creator.handle}`);
 
             allEarnings.push(...earningsWithCreator);
 
@@ -154,6 +169,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    console.log(`=== FINAL SUMMARY ===`);
+    console.log(`Total earnings after filtering: ${allEarnings.length}`);
+    console.log(`Creators processed: ${creators.length}`);
+    console.log(`Date range: ${startDate} to ${endDate}`);
+    console.log(`Sample dates:`, allEarnings.slice(0, 5).map(e => e.date));
+    
     const jsonResponse = NextResponse.json({
       data: allEarnings,
       totalRecords: allEarnings.length,
