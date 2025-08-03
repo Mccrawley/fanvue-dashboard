@@ -66,15 +66,42 @@ export default function AgencyDashboard() {
           setRateLimitWarning(true)
           throw new Error('Rate limit exceeded. Please wait a moment and try refreshing.')
         }
+        
+        // Handle specific error cases
+        if (response.status === 500) {
+          const errorData = await response.json().catch(() => ({}))
+          if (errorData.error?.includes('API key not configured')) {
+            throw new Error('API key not configured. Please check your Vercel environment variables.')
+          }
+          throw new Error(`Server error: ${errorData.error || response.statusText}`)
+        }
+        
         throw new Error(`Failed to fetch creators: ${response.statusText}`)
       }
 
       const data = await response.json()
-      setCreators(data.data || [])
-      setAgencyStats(prev => ({ ...prev, totalCreators: data.data?.length || 0 }))
+      
+      // Check if we got valid data
+      if (!data || !data.data || !Array.isArray(data.data)) {
+        console.error('Invalid API response:', data)
+        throw new Error('Invalid data received from API. Please check your API configuration.')
+      }
+      
+      const creatorsData = data.data || []
+      setCreators(creatorsData)
+      setAgencyStats(prev => ({ ...prev, totalCreators: creatorsData.length }))
 
       // Initialize creator stats with loading state
-      const initialStats = (data.data || []).map((creator: Creator) => ({
+      console.log('Creators data received:', creatorsData)
+      
+      if (!creatorsData || creatorsData.length === 0) {
+        console.warn('No creators data received')
+        setCreatorStats([])
+        setLoading(false)
+        return
+      }
+      
+      const initialStats = creatorsData.map((creator: Creator) => ({
         creator,
         revenue: 0,
         transactions: 0,
@@ -90,12 +117,21 @@ export default function AgencyDashboard() {
       await fetchCreatorStatsBatched(data.data || [])
       
     } catch (err: any) {
+      console.error('Dashboard error:', err)
       setError(err.message)
       setLoading(false)
     }
   }
 
   const fetchCreatorStatsBatched = async (creators: Creator[]) => {
+    console.log('Starting batch processing for creators:', creators.length)
+    
+    if (!creators || creators.length === 0) {
+      console.warn('No creators to process')
+      setLoading(false)
+      return
+    }
+    
     const totalCreators = creators.length
     let processedCreators = 0
 
@@ -117,6 +153,11 @@ export default function AgencyDashboard() {
         
         // Update stats for completed batch
         batchResults.forEach((result, index) => {
+          if (!batch || !batch[index]) {
+            console.warn('Invalid batch or creator at index:', index)
+            return
+          }
+          
           const creator = batch[index]
           processedCreators++
           
@@ -127,19 +168,33 @@ export default function AgencyDashboard() {
           })
 
           if (result.status === 'fulfilled') {
-            setCreatorStats(prev => prev.map(stat => 
-              stat.creator.uuid === creator.uuid 
-                ? { ...stat, ...result.value, isLoading: false, hasError: false }
-                : stat
-            ))
-          } else {
-            const errorMsg = result.reason?.message || 'Failed to load data'
-            setCreatorStats(prev => prev.map(stat => 
-              stat.creator.uuid === creator.uuid 
-                ? { ...stat, isLoading: false, hasError: true, errorMessage: errorMsg }
-                : stat
-            ))
-          }
+            setCreatorStats(prev => {
+              if (!prev || !Array.isArray(prev)) {
+                console.warn('Invalid creator stats state')
+                return prev
+              }
+              
+              return prev.map(stat => 
+                stat.creator.uuid === creator.uuid 
+                  ? { ...stat, ...result.value, isLoading: false, hasError: false }
+                  : stat
+              )
+            })
+                      } else {
+              const errorMsg = result.reason?.message || 'Failed to load data'
+              setCreatorStats(prev => {
+                if (!prev || !Array.isArray(prev)) {
+                  console.warn('Invalid creator stats state')
+                  return prev
+                }
+                
+                return prev.map(stat => 
+                  stat.creator.uuid === creator.uuid 
+                    ? { ...stat, isLoading: false, hasError: true, errorMessage: errorMsg }
+                    : stat
+                )
+              })
+            }
         })
 
         // Add delay between batches (except for the last batch)
@@ -166,7 +221,11 @@ export default function AgencyDashboard() {
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - 30) // Last 30 days
     const startDateStr = startDate.toISOString().split('T')[0]
-    const endDate = new Date().toISOString().split('T')[0]
+    
+    // Extend end date to include more recent data (up to 7 days in the future to catch any processing delays)
+    const endDate = new Date()
+    endDate.setDate(endDate.getDate() + 7) // Include next 7 days to catch processing delays
+    const endDateStr = endDate.toISOString().split('T')[0]
 
     let totalRevenue = 0
     let totalTransactions = 0
@@ -176,7 +235,7 @@ export default function AgencyDashboard() {
     try {
       // Fetch with rate limiting parameters
       const [earningsResponse, followersResponse, subscribersResponse] = await Promise.all([
-        fetch(`/api/creators/${creator.uuid}/earnings?startDate=${startDateStr}T00:00:00Z&endDate=${endDate}T23:59:59Z&maxPages=3`).catch(() => null),
+        fetch(`/api/creators/${creator.uuid}/earnings?startDate=${startDateStr}T00:00:00Z&endDate=${endDateStr}T23:59:59Z&maxPages=3`).catch(() => null),
         fetch(`/api/creators/${creator.uuid}/followers?maxPages=2`).catch(() => null),
         fetch(`/api/creators/${creator.uuid}/subscribers?maxPages=2`).catch(() => null)
       ])
@@ -215,6 +274,11 @@ export default function AgencyDashboard() {
 
   const calculateAgencyTotals = () => {
     setCreatorStats(prev => {
+      if (!prev || !Array.isArray(prev)) {
+        console.warn('Invalid creator stats for totals calculation')
+        return prev
+      }
+      
       const totals = prev.reduce((acc, stat) => {
         if (!stat.hasError) {
           acc.totalRevenue += stat.revenue
@@ -250,6 +314,9 @@ export default function AgencyDashboard() {
   }
 
   if (error) {
+    const isApiKeyError = error.includes('API key not configured')
+    const isDeploymentError = error.includes('Failed to fetch') || error.includes('Server error')
+    
     return (
       <div className="min-h-screen bg-gray-50 p-8">
         <div className="max-w-7xl mx-auto">
@@ -264,6 +331,32 @@ export default function AgencyDashboard() {
                 <h3 className="text-sm font-medium text-red-800">Error loading dashboard</h3>
                 <div className="mt-2 text-sm text-red-700">
                   <p>{error}</p>
+                  
+                  {isApiKeyError && (
+                    <div className="mt-3 p-3 bg-red-100 rounded-md">
+                      <p className="font-medium">How to fix this:</p>
+                      <ol className="list-decimal list-inside mt-1 space-y-1">
+                        <li>Go to your Vercel dashboard</li>
+                        <li>Select this project</li>
+                        <li>Go to Settings → Environment Variables</li>
+                        <li>Add: <code className="bg-red-200 px-1 rounded">FANVUE_API_KEY=your_api_key_here</code></li>
+                        <li>Add: <code className="bg-red-200 px-1 rounded">FANVUE_API_VERSION=2025-06-26</code></li>
+                        <li>Redeploy your application</li>
+                      </ol>
+                    </div>
+                  )}
+                  
+                  {isDeploymentError && (
+                    <div className="mt-3 p-3 bg-red-100 rounded-md">
+                      <p className="font-medium">Troubleshooting:</p>
+                      <ul className="list-disc list-inside mt-1 space-y-1">
+                        <li>Check that your API key is valid and has the correct permissions</li>
+                        <li>Verify your internet connection</li>
+                        <li>Try refreshing the page</li>
+                        <li>Contact support if the issue persists</li>
+                      </ul>
+                    </div>
+                  )}
                 </div>
                 <div className="mt-4">
                   <button
