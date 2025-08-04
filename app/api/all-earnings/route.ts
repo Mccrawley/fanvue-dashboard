@@ -96,15 +96,16 @@ export async function GET(request: NextRequest) {
     // Fetch earnings for each creator
     for (const creator of creators) {
       try {
-        let page = 1;
-        let hasMorePages = true;
+        let cursor: string | null = null;
+        let hasMore = true;
+        let pageCount = 0;
 
-        while (hasMorePages && page <= maxPages) {
+        while (hasMore && pageCount < maxPages) {
           // Build query parameters for creator earnings
           const queryParams = new URLSearchParams();
           if (startDate) queryParams.append("startDate", startDate);
           if (endDate) queryParams.append("endDate", endDate);
-          queryParams.append("page", page.toString());
+          if (cursor) queryParams.append("cursor", cursor);
           queryParams.append("size", "50");
 
           const earningsUrl = `https://api.fanvue.com/creators/${creator.uuid}/insights/earnings?${queryParams}`;
@@ -155,11 +156,37 @@ export async function GET(request: NextRequest) {
 
             allEarnings.push(...earningsWithCreator);
 
-            // Check if there are more pages
-            hasMorePages = earningsData.pagination?.hasNextPage && earnings.length > 0;
-            page++;
+            // Check if there's more data using cursor
+            cursor = earningsData.nextCursor;
+            hasMore = !!cursor;
+            pageCount++;
+
+            // Add small delay between requests to be rate-limit friendly
+            if (hasMore && pageCount < maxPages) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
           } else {
-            console.error(`Error fetching earnings for creator ${creator.uuid}:`, earningsResponse.status);
+            // Enhanced error logging for debugging 401 errors
+            const errorText = await earningsResponse.text();
+            console.error(`Error fetching earnings for creator ${creator.uuid}:`, {
+              status: earningsResponse.status,
+              statusText: earningsResponse.statusText,
+              error: errorText,
+              url: earningsUrl,
+              headers: {
+                'X-Fanvue-API-Key': apiKey ? '***SET***' : '***MISSING***',
+                'X-Fanvue-API-Version': apiVersion
+              }
+            });
+            
+            // If it's a 401, log more details
+            if (earningsResponse.status === 401) {
+              console.error(`🔐 401 AUTHENTICATION ERROR for creator ${creator.uuid}`);
+              console.error(`API Key present: ${!!apiKey}`);
+              console.error(`API Version: ${apiVersion}`);
+              console.error(`Full URL: ${earningsUrl}`);
+            }
+            
             break;
           }
         }
