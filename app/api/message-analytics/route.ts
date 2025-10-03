@@ -47,8 +47,8 @@ export async function GET(request: NextRequest) {
       endDate = `${endDate}T23:59:59.999Z`;
     }
 
-    // Get all creators first
-    const creatorsResponse = await fetchWithRetry("https://api.fanvue.com/creators?page=1&size=50", {
+    // Get creators first (limit to first 10 for faster response)
+    const creatorsResponse = await fetchWithRetry("https://api.fanvue.com/creators?page=1&size=10", {
       method: "GET",
       headers: {
         "X-Fanvue-API-Key": apiKey,
@@ -83,11 +83,11 @@ export async function GET(request: NextRequest) {
       }
     };
 
-    // Process each creator
-    for (const creator of creators) {
+    // Process each creator (limit to first 5 for faster response)
+    for (const creator of creators.slice(0, 5)) {
       try {
-        // Get creator's chats
-        const chatsResponse = await fetchWithRetry(`https://api.fanvue.com/creators/${creator.uuid}/chats?page=1&size=50`, {
+        // Get creator's chats (limit to first 20 chats)
+        const chatsResponse = await fetchWithRetry(`https://api.fanvue.com/creators/${creator.uuid}/chats?page=1&size=20`, {
           method: "GET",
           headers: {
             "X-Fanvue-API-Key": apiKey,
@@ -108,11 +108,11 @@ export async function GET(request: NextRequest) {
         let creatorMessagesReceived = 0;
         const fanMessageCounts: { [key: string]: number } = {};
 
-        // Process each chat
-        for (const chat of chats) {
+        // Process each chat (limit to first 10 chats per creator)
+        for (const chat of chats.slice(0, 10)) {
           try {
-            // Get messages for this chat
-            const messagesResponse = await fetchWithRetry(`https://api.fanvue.com/chats/${chat.uuid}/messages?page=1&size=100`, {
+            // Get messages for this chat (limit to first 50 messages)
+            const messagesResponse = await fetchWithRetry(`https://api.fanvue.com/chats/${chat.uuid}/messages?page=1&size=50`, {
               method: "GET",
               headers: {
                 "X-Fanvue-API-Key": apiKey,
@@ -167,13 +167,17 @@ export async function GET(request: NextRequest) {
           fanCount: Object.keys(fanMessageCounts).length
         });
 
-        // Add fan data
-        for (const [fanId, count] of Object.entries(fanMessageCounts)) {
+        // Add fan data (limit to top 20 fans per creator)
+        const sortedFans = Object.entries(fanMessageCounts)
+          .sort(([,a], [,b]) => b - a)
+          .slice(0, 20);
+          
+        for (const [fanId, count] of sortedFans) {
           messageAnalytics.messageVolumeByFan.push({
             fanUuid: fanId,
             fanName: `Fan ${fanId.substring(0, 8)}`,
             messagesSent: count,
-            messagesReceived: 0, // We don't track fan-to-fan messages
+            messagesReceived: 0,
             totalMessages: count
           });
         }
