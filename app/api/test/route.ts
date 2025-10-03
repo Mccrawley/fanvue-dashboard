@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const apiKey = process.env.FANVUE_API_KEY;
     const apiVersion = process.env.FANVUE_API_VERSION || "2025-06-26";

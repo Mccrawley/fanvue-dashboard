@@ -266,7 +266,6 @@ export default function RevenueDashboard() {
           ) : (
             <div className="space-y-4">
               {dailyRevenue.map((day) => {
-                const maxAmount = Math.max(...dailyRevenue.map(d => d.total))
                 
                 return (
                   <div key={day.date} className="border rounded-lg p-4">
