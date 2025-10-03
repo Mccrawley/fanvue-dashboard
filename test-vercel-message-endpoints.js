@@ -1,7 +1,7 @@
 // Test script for Vercel message analytics endpoints
 // Replace 'your-vercel-app' with your actual Vercel app URL
 
-const VERCEL_BASE_URL = 'https://your-vercel-app.vercel.app/api'; // Replace with your actual Vercel URL
+const VERCEL_BASE_URL = 'https://fanvue-dashboard-oioz46uvn-stjohn-moralis-projects.vercel.app/api';
 
 async function testEndpoint(endpoint, params = '') {
   try {
