@@ -1,5 +1,5 @@
 {
-  "api_base_url": "http://localhost:3000/api",
+  "api_base_url": "https://YOUR-VERCEL-APP.vercel.app/api",
   "endpoints": {
     "creators": {
       "url": "/creators",
@@ -74,36 +74,36 @@
     "data_sources": [
       {
         "name": "Creators",
-        "url": "http://localhost:3000/api/creators?page=1&size=15",
+        "url": "https://YOUR-VERCEL-APP.vercel.app/api/creators?page=1&size=15",
         "refresh_frequency": "Daily"
       },
       {
         "name": "Creator_Earnings",
-        "url": "http://localhost:3000/api/creators/{creatorUuid}/earnings?startDate=2025-01-01&endDate=2025-12-31&maxPages=10",
+        "url": "https://YOUR-VERCEL-APP.vercel.app/api/creators/{creatorUuid}/earnings?startDate=2025-01-01&endDate=2025-12-31&maxPages=10",
         "refresh_frequency": "Daily",
         "note": "Replace {creatorUuid} with actual creator UUIDs"
       },
       {
         "name": "Creator_Subscribers",
-        "url": "http://localhost:3000/api/creators/{creatorUuid}/subscribers?page=1&size=50",
+        "url": "https://YOUR-VERCEL-APP.vercel.app/api/creators/{creatorUuid}/subscribers?page=1&size=50",
         "refresh_frequency": "Daily",
         "note": "Replace {creatorUuid} with actual creator UUIDs"
       },
       {
         "name": "Message_Analytics",
-        "url": "http://localhost:3000/api/message-analytics?startDate=2025-01-01&endDate=2025-12-31&maxPages=5",
+        "url": "https://YOUR-VERCEL-APP.vercel.app/api/message-analytics?startDate=2025-01-01&endDate=2025-12-31&maxPages=5",
         "refresh_frequency": "Daily",
         "description": "Overall message metrics across all creators"
       },
       {
         "name": "Creator_Message_Volume",
-        "url": "http://localhost:3000/api/creators/{creatorUuid}/message-volume?startDate=2025-01-01&endDate=2025-12-31&maxPages=5",
+        "url": "https://YOUR-VERCEL-APP.vercel.app/api/creators/{creatorUuid}/message-volume?startDate=2025-01-01&endDate=2025-12-31&maxPages=5",
         "refresh_frequency": "Daily",
         "note": "Replace {creatorUuid} with actual creator UUIDs for individual creator message data"
       },
       {
         "name": "Fan_Engagement",
-        "url": "http://localhost:3000/api/fan-engagement?startDate=2025-01-01&endDate=2025-12-31&maxPages=3&minMessages=1",
+        "url": "https://YOUR-VERCEL-APP.vercel.app/api/fan-engagement?startDate=2025-01-01&endDate=2025-12-31&maxPages=3&minMessages=1",
         "refresh_frequency": "Daily",
         "description": "Fan engagement metrics and message activity"
       }
@@ -121,4 +121,4 @@
       "Creator response rates"
     ]
   }
-} 
+}
