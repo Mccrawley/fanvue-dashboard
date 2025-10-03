@@ -85,6 +85,9 @@ export async function GET(request: NextRequest) {
       }
     };
 
+    // Global fan engagement map to collect all fan data
+    const globalFanEngagementMap = new Map();
+
     // Process first 5 creators to avoid timeout
     const creatorsToProcess = creators.slice(0, 5);
     
@@ -202,10 +205,24 @@ export async function GET(request: NextRequest) {
       });
       
       messageAnalytics.summary.totalMessages += totalCreatorMessages;
+
+      // Merge fan engagement data into global map
+      for (const [fanUuid, fanData] of fanEngagementMap) {
+        if (!globalFanEngagementMap.has(fanUuid)) {
+          globalFanEngagementMap.set(fanUuid, fanData);
+        } else {
+          // Merge data if fan exists in multiple creators
+          const existingFan = globalFanEngagementMap.get(fanUuid);
+          existingFan.messagesSent += fanData.messagesSent;
+          existingFan.messagesReceived += fanData.messagesReceived;
+          existingFan.totalMessages += fanData.totalMessages;
+          existingFan.messageTimestamps.push(...fanData.messageTimestamps);
+        }
+      }
     }
 
-    // Convert fan engagement map to array
-    messageAnalytics.messageVolumeByFan = Array.from(fanEngagementMap.values())
+    // Convert global fan engagement map to array
+    messageAnalytics.messageVolumeByFan = Array.from(globalFanEngagementMap.values())
       .map(fan => ({
         ...fan,
         messageTimestamps: fan.messageTimestamps.slice(0, 20) // Limit timestamps
