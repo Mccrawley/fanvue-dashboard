@@ -22,6 +22,17 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
 
   const checkAuthStatus = async () => {
     try {
+      // Check URL parameters for OAuth success
+      const urlParams = new URLSearchParams(window.location.search)
+      if (urlParams.get('success') === 'true') {
+        // OAuth completed successfully, check if we can access data
+        setAuthStatus({
+          isAuthenticated: true,
+          isLoading: false
+        })
+        return
+      }
+
       // Test if we can access a protected endpoint
       const response = await fetch('/api/creators?page=1&size=1')
       
@@ -31,7 +42,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
         setAuthStatus({
           isAuthenticated: false,
           isLoading: false,
-          authUrl: errorData.authUrl
+          authUrl: errorData.authUrl || '/api/auth/authorize'
         })
       } else if (response.ok) {
         // Authenticated successfully
@@ -40,7 +51,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
           isLoading: false
         })
       } else {
-        // Other error
+        // Other error - try OAuth
         setAuthStatus({
           isAuthenticated: false,
           isLoading: false,

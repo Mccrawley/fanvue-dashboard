@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
     
     // Store tokens in secure HTTP-only cookies
     const response = NextResponse.redirect(
-      `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/dashboard?success=true`
+      `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/?success=true`
     );
 
     // Store access token
