@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     if (!code || !state) {
       return NextResponse.redirect(
-        `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/?error=missing_parameters`
+        `${process.env.NEXTAUTH_URL || 'https://fanvue-dashboard.vercel.app'}/?error=missing_parameters`
       );
     }
 
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const storedState = request.cookies.get('oauth_state')?.value;
     if (!storedState || state !== storedState) {
       return NextResponse.redirect(
-        `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/?error=invalid_state`
+        `${process.env.NEXTAUTH_URL || 'https://fanvue-dashboard.vercel.app'}/?error=invalid_state`
       );
     }
 
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const codeVerifier = request.cookies.get('oauth_code_verifier')?.value;
     if (!codeVerifier) {
       return NextResponse.redirect(
-        `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/?error=missing_verifier`
+        `${process.env.NEXTAUTH_URL || 'https://fanvue-dashboard.vercel.app'}/?error=missing_verifier`
       );
     }
 
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     if (!clientId || !clientSecret || !redirectUri) {
       return NextResponse.redirect(
-        `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/?error=oauth_config_missing`
+        `${process.env.NEXTAUTH_URL || 'https://fanvue-dashboard.vercel.app'}/?error=oauth_config_missing`
       );
     }
 
@@ -65,9 +65,20 @@ export async function GET(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
-      console.error("Token exchange failed:", errorText);
+      console.error("Token exchange failed:", {
+        status: tokenResponse.status,
+        statusText: tokenResponse.statusText,
+        error: errorText,
+        requestParams: {
+          grant_type: 'authorization_code',
+          client_id: clientId ? `${clientId.substring(0, 8)}...` : 'MISSING',
+          redirect_uri: redirectUri,
+          code: code ? 'PRESENT' : 'MISSING',
+          code_verifier: codeVerifier ? 'PRESENT' : 'MISSING'
+        }
+      });
       return NextResponse.redirect(
-        `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/?error=token_exchange_failed`
+        `${process.env.NEXTAUTH_URL || 'https://fanvue-dashboard.vercel.app'}/?error=token_exchange_failed&details=${encodeURIComponent(errorText)}`
       );
     }
 
@@ -75,7 +86,7 @@ export async function GET(request: NextRequest) {
     
     // Store tokens in secure HTTP-only cookies
     const response = NextResponse.redirect(
-      `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/?success=true`
+      `${process.env.NEXTAUTH_URL || 'https://fanvue-dashboard.vercel.app'}/?success=true`
     );
 
     // Store access token
