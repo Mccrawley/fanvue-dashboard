@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { makeAuthenticatedRequest, isAuthenticated, getAuthUrl } from "@/lib/oauth";
 
 // Enhanced rate limiting with exponential backoff
 async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
@@ -108,13 +109,14 @@ function _getPeakMessagingHours(messageTimestamps: any[]): any {
 
 export async function GET(request: NextRequest) {
   try {
-    const apiKey = process.env.FANVUE_API_KEY;
-    const apiVersion = process.env.FANVUE_API_VERSION || "2025-06-26";
-
-    if (!apiKey) {
+    // Check if user is authenticated
+    if (!isAuthenticated(request)) {
       return NextResponse.json(
-        { error: "API key not configured" },
-        { status: 500 }
+        { 
+          error: "Authentication required",
+          authUrl: getAuthUrl()
+        },
+        { status: 401 }
       );
     }
 
@@ -134,14 +136,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Get creators first
-    const creatorsResponse = await fetchWithRetry("https://api.fanvue.com/creators?page=1&size=50", {
+    const creatorsResponse = await makeAuthenticatedRequest("https://api.fanvue.com/creators?page=1&size=50", {
       method: "GET",
-      headers: {
-        "X-Fanvue-API-Key": apiKey,
-        "X-Fanvue-API-Version": apiVersion,
-        "Content-Type": "application/json",
-      },
-    });
+    }, request);
 
     if (!creatorsResponse.ok) {
       const errorText = await creatorsResponse.text();
@@ -184,14 +181,9 @@ export async function GET(request: NextRequest) {
 
       // Get chats for this creator
       for (let page = 1; page <= maxPages; page++) {
-        const chatsResponse = await fetchWithRetry(`https://api.fanvue.com/creators/${creator.uuid}/chats?page=${page}&size=50&startDate=${startDate}&endDate=${endDate}`, {
+        const chatsResponse = await makeAuthenticatedRequest(`https://api.fanvue.com/creators/${creator.uuid}/chats?page=${page}&size=50&startDate=${startDate}&endDate=${endDate}`, {
           method: "GET",
-          headers: {
-            "X-Fanvue-API-Key": apiKey,
-            "X-Fanvue-API-Version": apiVersion,
-            "Content-Type": "application/json",
-          },
-        });
+        }, request);
 
         if (!chatsResponse.ok) {
           console.warn(`Failed to get chats for creator ${creator.uuid} on page ${page}: ${chatsResponse.status}`);
@@ -205,14 +197,9 @@ export async function GET(request: NextRequest) {
 
         for (const chat of chats) {
           // Get messages for this chat
-          const messagesResponse = await fetchWithRetry(`https://api.fanvue.com/creators/${creator.uuid}/chats/${chat.uuid}/messages?page=1&size=100&startDate=${startDate}&endDate=${endDate}`, {
+          const messagesResponse = await makeAuthenticatedRequest(`https://api.fanvue.com/creators/${creator.uuid}/chats/${chat.uuid}/messages?page=1&size=100&startDate=${startDate}&endDate=${endDate}`, {
             method: "GET",
-            headers: {
-              "X-Fanvue-API-Key": apiKey,
-              "X-Fanvue-API-Version": apiVersion,
-              "Content-Type": "application/json",
-            },
-          });
+          }, request);
 
           if (!messagesResponse.ok) {
             console.warn(`Failed to get messages for chat ${chat.uuid}: ${messagesResponse.status}`);

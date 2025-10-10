@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { makeAuthenticatedRequest, isAuthenticated, getAuthUrl } from "@/lib/oauth";
 
 // Rate limiting utility
 async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
@@ -34,21 +35,21 @@ export async function OPTIONS(request: NextRequest) {
   });
 }
 
-export async function GET(_request: NextRequest) {
-  
+export async function GET(request: NextRequest) {
   try {
-    const apiKey = process.env.FANVUE_API_KEY;
-    const apiVersion = process.env.FANVUE_API_VERSION || "2025-06-26";
-
-    if (!apiKey) {
+    // Check if user is authenticated
+    if (!isAuthenticated(request)) {
       return NextResponse.json(
-        { error: "API key not configured" },
-        { status: 500 }
+        { 
+          error: "Authentication required",
+          authUrl: getAuthUrl()
+        },
+        { status: 401 }
       );
     }
 
     // Extract query parameters
-    const { searchParams } = new URL(_request.url);
+    const { searchParams } = new URL(request.url);
     let startDate = searchParams.get("startDate");
     let endDate = searchParams.get("endDate");
     const maxPages = parseInt(searchParams.get("maxPages") || "5");
@@ -72,14 +73,9 @@ export async function GET(_request: NextRequest) {
     }
 
     // Get all creators (up to 50)
-    const creatorsResponse = await fetchWithRetry("https://api.fanvue.com/creators?page=1&size=50", {
+    const creatorsResponse = await makeAuthenticatedRequest("https://api.fanvue.com/creators?page=1&size=50", {
       method: "GET",
-      headers: {
-        "X-Fanvue-API-Key": apiKey,
-        "X-Fanvue-API-Version": apiVersion,
-        "Content-Type": "application/json",
-      },
-    });
+    }, request);
 
     if (!creatorsResponse.ok) {
       const errorText = await creatorsResponse.text();
@@ -110,14 +106,9 @@ export async function GET(_request: NextRequest) {
 
           const earningsUrl = `https://api.fanvue.com/creators/${creator.uuid}/insights/earnings?${queryParams}`;
 
-          const earningsResponse = await fetchWithRetry(earningsUrl, {
+          const earningsResponse = await makeAuthenticatedRequest(earningsUrl, {
             method: "GET",
-            headers: {
-              "X-Fanvue-API-Key": apiKey,
-              "X-Fanvue-API-Version": apiVersion,
-              "Content-Type": "application/json",
-            },
-          });
+          }, request);
 
           if (earningsResponse.ok) {
             const earningsData = await earningsResponse.json();
