@@ -18,7 +18,7 @@ function generateCodeChallenge(verifier: string): string {
   return base64URLEncode(createHash('sha256').update(verifier).digest());
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const clientId = process.env.FANVUE_OAUTH_CLIENT_ID;
     const redirectUri = process.env.FANVUE_OAUTH_REDIRECT_URI;
