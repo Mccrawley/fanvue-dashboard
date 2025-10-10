@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 interface AuthStatus {
   isAuthenticated: boolean
@@ -14,7 +13,6 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
     isAuthenticated: false,
     isLoading: true
   })
-  const router = useRouter()
 
   useEffect(() => {
     checkAuthStatus()
@@ -109,7 +107,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
           </button>
           
           <p className="text-sm text-gray-500 mt-4">
-            You'll be redirected to Fanvue to complete the login process.
+            You&apos;ll be redirected to Fanvue to complete the login process.
           </p>
         </div>
       </div>
