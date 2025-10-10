@@ -23,16 +23,31 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
       // Check URL parameters for OAuth success
       const urlParams = new URLSearchParams(window.location.search)
       if (urlParams.get('success') === 'true') {
-        // OAuth completed successfully, check if we can access data
-        setAuthStatus({
-          isAuthenticated: true,
-          isLoading: false
-        })
-        return
+        // OAuth completed successfully, verify we can access data
+        try {
+          const testResponse = await fetch('/api/creators?page=1&size=1', {
+            credentials: 'include' // Ensure cookies are sent
+          })
+          
+          if (testResponse.ok) {
+            // Authentication confirmed with API access
+            setAuthStatus({
+              isAuthenticated: true,
+              isLoading: false
+            })
+            // Clear the success parameter from URL
+            window.history.replaceState({}, document.title, window.location.pathname)
+            return
+          }
+        } catch (error) {
+          console.error('Auth verification failed:', error)
+        }
       }
 
       // Test if we can access a protected endpoint
-      const response = await fetch('/api/creators?page=1&size=1')
+      const response = await fetch('/api/creators?page=1&size=1', {
+        credentials: 'include' // Ensure cookies are sent
+      })
       
       if (response.status === 401) {
         // Not authenticated - get auth URL

@@ -55,7 +55,9 @@ export default function AgencyDashboard() {
       setError(null)
       setLoadingProgress({ current: 0, total: 0, status: 'Fetching creators...' })
 
-      const response = await fetch('/api/creators?page=1&size=15')
+      const response = await fetch('/api/creators?page=1&size=15', {
+        credentials: 'include' // Ensure cookies are sent
+      })
       
       if (!response.ok) {
         if (response.status === 401) {
