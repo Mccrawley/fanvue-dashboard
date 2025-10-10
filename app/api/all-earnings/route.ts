@@ -1,28 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { makeAuthenticatedRequest, isAuthenticated, getAuthUrl } from "@/lib/oauth";
 
-// Rate limiting utility
-async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const response = await fetch(url, options);
-    
-    if (response.status === 429) {
-      if (attempt === maxRetries) {
-        throw new Error(`Rate limit exceeded after ${maxRetries} retries`);
-      }
-      
-      // Exponential backoff: 2s, 4s, 8s
-      const delay = Math.pow(2, attempt + 1) * 1000;
-      console.log(`Rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries + 1})`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      continue;
-    }
-    
-    return response;
-  }
-  
-  throw new Error("Unexpected error in fetchWithRetry");
-}
+// OAuth authentication is handled by makeAuthenticatedRequest utility
 
 export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
@@ -165,16 +144,16 @@ export async function GET(request: NextRequest) {
               error: errorText,
               url: earningsUrl,
               headers: {
-                'X-Fanvue-API-Key': apiKey ? '***SET***' : '***MISSING***',
-                'X-Fanvue-API-Version': apiVersion
+                'Authentication': 'OAuth Bearer Token',
+                'X-Fanvue-API-Version': process.env.FANVUE_API_VERSION || '2025-06-26'
               }
             });
             
             // If it's a 401, log more details
             if (earningsResponse.status === 401) {
               console.error(`🔐 401 AUTHENTICATION ERROR for creator ${creator.uuid}`);
-              console.error(`API Key present: ${!!apiKey}`);
-              console.error(`API Version: ${apiVersion}`);
+              console.error(`Authentication: OAuth Bearer Token`);
+              console.error(`API Version: ${process.env.FANVUE_API_VERSION || '2025-06-26'}`);
               console.error(`Full URL: ${earningsUrl}`);
             }
             
