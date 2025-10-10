@@ -48,7 +48,7 @@ export async function GET(_request: NextRequest) {
     }
 
     // Extract query parameters
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     let startDate = searchParams.get("startDate");
     let endDate = searchParams.get("endDate");
     const maxPages = parseInt(searchParams.get("maxPages") || "5");
