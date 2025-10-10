@@ -32,15 +32,17 @@ export async function refreshAccessToken(refreshToken: string): Promise<FanvueTo
       throw new Error("OAuth configuration missing");
     }
 
+    // Use Basic Authentication (client_secret_basic) instead of POST body
+    const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+    
     const response = await fetch('https://auth.fanvue.com/oauth2/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${credentials}`,
       },
       body: new URLSearchParams({
         grant_type: 'refresh_token',
-        client_id: clientId,
-        client_secret: clientSecret,
         refresh_token: refreshToken,
       }),
     });
