@@ -58,6 +58,16 @@ export default function AgencyDashboard() {
       const response = await fetch('/api/creators?page=1&size=15')
       
       if (!response.ok) {
+        if (response.status === 401) {
+          // Authentication required - redirect to OAuth
+          const errorData = await response.json().catch(() => ({}))
+          if (errorData.authUrl) {
+            window.location.href = errorData.authUrl
+            return
+          }
+          throw new Error('Authentication required. Please login with Fanvue.')
+        }
+        
         if (response.status === 429) {
           setRateLimitWarning(true)
           throw new Error('Rate limit exceeded. Please wait a moment and try refreshing.')
