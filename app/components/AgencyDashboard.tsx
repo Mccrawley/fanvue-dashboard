@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 interface Creator {
   uuid: string
@@ -49,11 +49,7 @@ export default function AgencyDashboard() {
   const BATCH_SIZE = 3; // Process 3 creators at a time
   const BATCH_DELAY = 2000; // 2 second delay between batches
 
-  useEffect(() => {
-    fetchCreators()
-  }, [fetchCreators])
-
-  const fetchCreators = async () => {
+  const fetchCreators = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -121,7 +117,11 @@ export default function AgencyDashboard() {
       setError(err.message)
       setLoading(false)
     }
-  }
+  }, []) // Empty dependency array for useCallback
+
+  useEffect(() => {
+    fetchCreators()
+  }, [fetchCreators])
 
   const fetchCreatorStatsBatched = async (creators: Creator[]) => {
     console.log('Starting batch processing for creators:', creators.length)
