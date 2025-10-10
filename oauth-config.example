@@ -1,0 +1,14 @@
+# Fanvue OAuth 2.0 Configuration
+# Copy this to .env.local and update with your values
+
+FANVUE_OAUTH_CLIENT_ID=bf2bc2f2-de28-466c-9083-4b590bad7f61
+FANVUE_OAUTH_CLIENT_SECRET=cbk8bZTdLXq7xc.em8Qn0rldRA
+FANVUE_OAUTH_REDIRECT_URI=https://your-dashboard.vercel.app/api/auth/callback
+FANVUE_API_VERSION=2025-06-26
+
+# OAuth Scopes are configured in Fanvue Developer Portal
+# No need for FANVUE_OAUTH_SCOPES environment variable
+
+# Session Secret (generate a random string)
+NEXTAUTH_SECRET=your-random-session-secret-here
+NEXTAUTH_URL=https://your-dashboard.vercel.app

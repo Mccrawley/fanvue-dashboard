@@ -53,9 +53,9 @@ export async function GET(request: NextRequest) {
     let endDate = searchParams.get("endDate");
     const maxPages = parseInt(searchParams.get("maxPages") || "5");
 
-    // Default to 2025 if no start date provided
+    // Default to 2024 if no start date provided (to include your data)
     if (!startDate) {
-      startDate = "2025-01-01";
+      startDate = "2024-01-01";
     }
     
     // Default to current date if no end date provided
@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
                 }
                 
                 const year = earningDate.getFullYear();
-                const isIncluded = year >= 2025;
+                const isIncluded = year >= 2024; // Changed from 2025 to 2024 to include your data
                 console.log(`Filtering earning date: ${earning.date}, year: ${year}, included: ${isIncluded}`);
                 return isIncluded;
               })
@@ -202,7 +202,7 @@ export async function GET(request: NextRequest) {
     console.log(`Date range: ${startDate} to ${endDate}`);
     console.log(`Sample dates:`, allEarnings.slice(0, 5).map(e => e.date));
     console.log(`Current date: ${new Date().toISOString()}`);
-    console.log(`Filtering year: >= 2025`);
+    console.log(`Filtering year: >= 2024`);
     console.log(`All earnings data:`, allEarnings.slice(0, 3));
     
     const jsonResponse = NextResponse.json({

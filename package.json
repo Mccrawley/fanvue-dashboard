@@ -6,7 +6,10 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "message-volume": "node scripts/message-volume.js",
+    "analyze-molly": "node scripts/message-volume.js molly-carter",
+    "molly-today": "node scripts/message-volume.js molly-carter"
   },
   "dependencies": {
     "next": "^15.4.3",

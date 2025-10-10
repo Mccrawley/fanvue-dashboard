@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// Enhanced rate limiting with exponential backoff
 async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
   for (let i = 0; i < maxRetries; i++) {
     try {
       const response = await fetch(url, options);
       if (response.ok || response.status === 404) {
         return response;
+      }
+      if (response.status === 429) {
+        // Rate limited - wait longer
+        const delay = Math.pow(2, i + 1) * 1000; // 2s, 4s, 8s
+        console.log(`Rate limited, waiting ${delay}ms before retry ${i + 1}/${maxRetries}`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
       }
       if (i === maxRetries - 1) {
         return response;
@@ -19,6 +27,83 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3)
     }
   }
   throw new Error('Max retries exceeded');
+}
+
+// Helper function to calculate response time between messages
+function calculateResponseTime(messages: any[]): number {
+  if (messages.length < 2) return 0;
+  
+  const sortedMessages = messages.sort((a, b) => 
+    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  );
+  
+  let totalResponseTime = 0;
+  let responseCount = 0;
+  
+  for (let i = 0; i < sortedMessages.length - 1; i++) {
+    const current = sortedMessages[i];
+    const next = sortedMessages[i + 1];
+    
+    // If current is from fan and next is from creator, calculate response time
+    if (current.senderType === 'fan' && next.senderType === 'creator') {
+      const responseTime = new Date(next.createdAt).getTime() - new Date(current.createdAt).getTime();
+      totalResponseTime += responseTime;
+      responseCount++;
+    }
+  }
+  
+  return responseCount > 0 ? totalResponseTime / responseCount : 0;
+}
+
+// Helper function to calculate engagement score
+function calculateEngagementScore(fanData: any): number {
+  const messageCount = fanData.totalMessages || 0;
+  const creatorCount = fanData.creatorCount || 1;
+  const daysActive = fanData.daysActive || 1;
+  
+  // Base score from message count
+  let score = Math.min(messageCount * 2, 100);
+  
+  // Bonus for engaging with multiple creators
+  if (creatorCount > 1) {
+    score += Math.min(creatorCount * 5, 20);
+  }
+  
+  // Bonus for consistent activity
+  const avgMessagesPerDay = messageCount / daysActive;
+  if (avgMessagesPerDay > 5) {
+    score += 15;
+  } else if (avgMessagesPerDay > 2) {
+    score += 10;
+  }
+  
+  return Math.min(score, 100);
+}
+
+// Helper function to get peak messaging hours
+function getPeakMessagingHours(messageTimestamps: any[]): any {
+  const hourCounts = new Array(24).fill(0);
+  
+  messageTimestamps.forEach(msg => {
+    const hour = new Date(msg.timestamp).getHours();
+    hourCounts[hour]++;
+  });
+  
+  const maxCount = Math.max(...hourCounts);
+  const peakHours = hourCounts
+    .map((count, hour) => ({ hour, count }))
+    .filter(h => h.count === maxCount)
+    .map(h => h.hour);
+  
+  return {
+    peakHours,
+    maxCount,
+    hourlyDistribution: hourCounts.map((count, hour) => ({
+      hour,
+      count,
+      percentage: messageTimestamps.length > 0 ? (count / messageTimestamps.length) * 100 : 0
+    }))
+  };
 }
 
 export async function GET(request: NextRequest) {
