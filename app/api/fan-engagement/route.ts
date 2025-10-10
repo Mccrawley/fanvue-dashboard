@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Convert fan data to array and calculate engagement scores
-    for (const [fanId, fan] of Object.entries(fanData)) {
+    for (const [_fanId, fan] of Object.entries(fanData)) {
       if (fan.totalMessages >= minMessages) {
         // Calculate engagement score based on message count and creator diversity
         const creatorDiversity = fan.creatorsEngaged.size;

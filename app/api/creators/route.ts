@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { makeAuthenticatedRequest, isAuthenticated, getAuthUrl } from "@/lib/oauth";
 
 // Rate limiting utility
-async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
+async function _fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const response = await fetch(url, options);
     

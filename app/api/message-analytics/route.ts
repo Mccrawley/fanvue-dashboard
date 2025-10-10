@@ -30,7 +30,7 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3)
 }
 
 // Helper function to calculate response time between messages
-function calculateResponseTime(messages: any[]): number {
+function _calculateResponseTime(messages: any[]): number {
   if (messages.length < 2) return 0;
   
   const sortedMessages = messages.sort((a, b) => 
@@ -56,7 +56,7 @@ function calculateResponseTime(messages: any[]): number {
 }
 
 // Helper function to calculate engagement score
-function calculateEngagementScore(fanData: any): number {
+function _calculateEngagementScore(fanData: any): number {
   const messageCount = fanData.totalMessages || 0;
   const creatorCount = fanData.creatorCount || 1;
   const daysActive = fanData.daysActive || 1;
@@ -81,7 +81,7 @@ function calculateEngagementScore(fanData: any): number {
 }
 
 // Helper function to get peak messaging hours
-function getPeakMessagingHours(messageTimestamps: any[]): any {
+function _getPeakMessagingHours(messageTimestamps: any[]): any {
   const hourCounts = new Array(24).fill(0);
   
   messageTimestamps.forEach(msg => {
