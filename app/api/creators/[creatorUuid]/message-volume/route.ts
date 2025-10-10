@@ -42,7 +42,7 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     let startDate = searchParams.get("startDate");
     let endDate = searchParams.get("endDate");
-    const maxPages = parseInt(searchParams.get("maxPages") || "5");
+    // const maxPages = parseInt(searchParams.get("maxPages") || "5"); // Not currently used
 
     // Default to last 30 days if no dates provided
     if (!startDate) {

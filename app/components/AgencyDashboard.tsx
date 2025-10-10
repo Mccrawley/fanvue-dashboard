@@ -51,7 +51,7 @@ export default function AgencyDashboard() {
 
   useEffect(() => {
     fetchCreators()
-  }, [])
+  }, [fetchCreators])
 
   const fetchCreators = async () => {
     try {

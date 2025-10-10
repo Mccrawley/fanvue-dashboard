@@ -119,7 +119,7 @@ export default function RevenueDashboard() {
 
   useEffect(() => {
     fetchEarningsData()
-  }, [startDate, endDate])
+  }, [startDate, endDate, fetchEarningsData])
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {

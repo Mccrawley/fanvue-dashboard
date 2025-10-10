@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     let startDate = searchParams.get("startDate") || "2025-01-01";
     let endDate = searchParams.get("endDate") || new Date().toISOString().split('T')[0];
-    const maxPages = parseInt(searchParams.get("maxPages") || "3");
+    // const maxPages = parseInt(searchParams.get("maxPages") || "3"); // Not currently used
     const minMessages = parseInt(searchParams.get("minMessages") || "1");
 
     // Convert dates to ISO format
