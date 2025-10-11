@@ -9,9 +9,11 @@ export async function GET(request: NextRequest) {
 
     // Handle OAuth errors
     if (error) {
-      console.error("OAuth error:", error);
+      console.error("OAuth error received from Fanvue:", error);
+      const errorDescription = searchParams.get('error_description');
+      console.error("Error description:", errorDescription);
       return NextResponse.redirect(
-        `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/?error=${encodeURIComponent(error)}`
+        `${process.env.NEXTAUTH_URL || 'https://fanvue-dashboard.vercel.app'}/?error=${encodeURIComponent(error)}&details=${encodeURIComponent(errorDescription || 'No details provided')}`
       );
     }
 
