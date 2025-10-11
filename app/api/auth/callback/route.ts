@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
     // Store access token
     response.cookies.set('fanvue_access_token', tokenData.access_token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true, // Always secure on HTTPS
       sameSite: 'lax',
       maxAge: tokenData.expires_in || 3600 // 1 hour default
     });
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
     if (tokenData.refresh_token) {
       response.cookies.set('fanvue_refresh_token', tokenData.refresh_token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: true, // Always secure on HTTPS
         sameSite: 'lax',
         maxAge: 30 * 24 * 60 * 60 // 30 days
       });
@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
     // Store token type
     response.cookies.set('fanvue_token_type', tokenData.token_type || 'Bearer', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true, // Always secure on HTTPS
       sameSite: 'lax',
       maxAge: 30 * 24 * 60 * 60 // 30 days
     });
