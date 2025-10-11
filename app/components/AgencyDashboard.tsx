@@ -93,9 +93,17 @@ export default function AgencyDashboard() {
 
       const data = await response.json()
       
+      // Debug: Log the full API response
+      console.log('=== FULL API RESPONSE ===')
+      console.log('Response status:', response.status)
+      console.log('Response data:', data)
+      console.log('Data type:', typeof data)
+      console.log('Data.data type:', typeof data.data)
+      console.log('Data.data is array:', Array.isArray(data.data))
+      
       // Check if we got valid data
       if (!data || !data.data || !Array.isArray(data.data)) {
-        console.error('Invalid API response:', data)
+        console.error('Invalid API response structure:', data)
         throw new Error('Invalid data received from API. Please check your API configuration.')
       }
       
@@ -143,7 +151,11 @@ export default function AgencyDashboard() {
       await fetchCreatorStatsBatched(creators)
       
     } catch (err: any) {
-      console.error('Dashboard error:', err)
+      console.error('=== DASHBOARD ERROR ===')
+      console.error('Error type:', typeof err)
+      console.error('Error message:', err.message)
+      console.error('Full error:', err)
+      console.error('Stack trace:', err.stack)
       setError(err.message)
       setLoading(false)
     }
