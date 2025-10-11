@@ -122,6 +122,16 @@ export default function AgencyDashboard() {
         return
       }
 
+      // Debug: Log the structure of first creator to understand field names
+      if (creators.length > 0) {
+        console.log('=== FIRST CREATOR STRUCTURE ===')
+        console.log('Raw creator data:', creators[0])
+        console.log('Available fields:', Object.keys(creators[0]))
+        console.log('name field:', creators[0].name)
+        console.log('username field:', creators[0].username)
+        console.log('avatarUrl field:', creators[0].avatarUrl)
+      }
+
       const initialStats = creators.map((creator: Creator) => ({
         creator,
         revenue: 0,
