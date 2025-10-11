@@ -539,11 +539,11 @@ export default function AgencyDashboard() {
                     <div className="flex-shrink-0">
                       {stat.creator.avatarUrl ? (
                         <img className="h-10 w-10 rounded-full" src={stat.creator.avatarUrl} alt={stat.creator.name} />
-                      ) : (
-                        <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                          <span className="text-sm font-medium text-gray-700">{stat.creator.name[0]}</span>
-                        </div>
-                      )}
+                        ) : (
+                          <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                            <span className="text-sm font-medium text-gray-700">{stat.creator.name?.[0] || '?'}</span>
+                          </div>
+                        )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate flex items-center">
@@ -622,11 +622,11 @@ export default function AgencyDashboard() {
                   <div className="flex items-center space-x-4">
                     {selectedCreator.creator.avatarUrl ? (
                       <img className="h-16 w-16 rounded-full" src={selectedCreator.creator.avatarUrl} alt={selectedCreator.creator.name} />
-                    ) : (
-                      <div className="h-16 w-16 rounded-full bg-gray-300 flex items-center justify-center">
-                        <span className="text-xl font-medium text-gray-700">{selectedCreator.creator.name[0]}</span>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="h-16 w-16 rounded-full bg-gray-300 flex items-center justify-center">
+                          <span className="text-xl font-medium text-gray-700">{selectedCreator.creator.name?.[0] || '?'}</span>
+                        </div>
+                      )}
                     <div>
                       <h4 className="text-xl font-medium text-gray-900 flex items-center">
                         {selectedCreator.creator.name}
