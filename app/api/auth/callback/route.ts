@@ -88,12 +88,27 @@ export async function GET(request: NextRequest) {
 
     const tokenData = await tokenResponse.json();
     
+    // Debug logging for token data
+    console.log("OAuth token exchange successful:", {
+      hasAccessToken: !!tokenData.access_token,
+      hasRefreshToken: !!tokenData.refresh_token,
+      tokenType: tokenData.token_type,
+      expiresIn: tokenData.expires_in,
+      accessTokenPreview: tokenData.access_token ? `${tokenData.access_token.substring(0, 20)}...` : 'MISSING'
+    });
+    
     // Store tokens in secure HTTP-only cookies
     const response = NextResponse.redirect(
       `${process.env.NEXTAUTH_URL || 'https://fanvue-dashboard.vercel.app'}/?success=true`
     );
 
     // Store access token
+    console.log("Setting fanvue_access_token cookie:", {
+      hasToken: !!tokenData.access_token,
+      tokenLength: tokenData.access_token ? tokenData.access_token.length : 0,
+      expiresIn: tokenData.expires_in || 3600
+    });
+    
     response.cookies.set('fanvue_access_token', tokenData.access_token, {
       httpOnly: true,
       secure: true, // Always secure on HTTPS
