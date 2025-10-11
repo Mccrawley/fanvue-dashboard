@@ -25,7 +25,20 @@ export async function GET(request: NextRequest) {
 
     // Verify state parameter
     const storedState = request.cookies.get('oauth_state')?.value;
+    
+    console.log("OAuth state verification:", {
+      receivedState: state,
+      storedState: storedState,
+      statesMatch: state === storedState,
+      hasStoredState: !!storedState
+    });
+    
     if (!storedState || state !== storedState) {
+      console.error("OAuth state mismatch:", {
+        receivedState: state,
+        storedState: storedState,
+        error: "State parameter mismatch - possible CSRF attack or cookie issue"
+      });
       return NextResponse.redirect(
         `${process.env.NEXTAUTH_URL || 'https://fanvue-dashboard.vercel.app'}/?error=invalid_state`
       );

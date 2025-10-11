@@ -52,14 +52,14 @@ export async function GET(_request: NextRequest) {
     // Store PKCE parameters in secure HTTP-only cookies
     response.cookies.set('oauth_code_verifier', codeVerifier, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true, // Always secure on HTTPS
       sameSite: 'lax',
       maxAge: 600 // 10 minutes
     });
 
     response.cookies.set('oauth_state', state, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true, // Always secure on HTTPS
       sameSite: 'lax',
       maxAge: 600 // 10 minutes
     });
