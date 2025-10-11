@@ -109,7 +109,20 @@ export default function AgencyDashboard() {
         return
       }
       
-      const initialStats = creatorsData.map((creator: Creator) => ({
+      // Handle different possible data structures from API
+      let creators: Creator[] = []
+      if (Array.isArray(creatorsData)) {
+        creators = creatorsData
+      } else if (creatorsData && Array.isArray(creatorsData.data)) {
+        creators = creatorsData.data
+      } else {
+        console.error('Unexpected creators data structure:', creatorsData)
+        setCreatorStats([])
+        setLoading(false)
+        return
+      }
+
+      const initialStats = creators.map((creator: Creator) => ({
         creator,
         revenue: 0,
         transactions: 0,
@@ -122,7 +135,7 @@ export default function AgencyDashboard() {
       setCreatorStats(initialStats)
 
       // Fetch stats in batches to avoid rate limiting
-      await fetchCreatorStatsBatched(data.data || [])
+      await fetchCreatorStatsBatched(creators)
       
     } catch (err: any) {
       console.error('Dashboard error:', err)
