@@ -37,33 +37,64 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Extract query parameters
-    const { searchParams } = new URL(request.url);
-    const page = searchParams.get("page") || "1";
-    const size = searchParams.get("size") || "15";
+    // Fetch ALL creators with pagination
+    let allCreators: any[] = [];
+    let hasMore = true;
+    let page = 1;
+    const pageSize = 50; // Use larger page size to reduce API calls
+    let totalPages = 0;
+    const maxPages = 10; // Safety limit to prevent infinite loops
 
-    // Build query parameters for Fanvue API
-    const queryParams = new URLSearchParams();
-    queryParams.append("page", page);
-    queryParams.append("size", size);
+    while (hasMore && totalPages < maxPages) {
+      // Build query parameters for Fanvue API
+      const queryParams = new URLSearchParams();
+      queryParams.append("page", page.toString());
+      queryParams.append("size", pageSize.toString());
 
-    const fanvueUrl = `https://api.fanvue.com/creators?${queryParams}`;
+      const fanvueUrl = `https://api.fanvue.com/creators?${queryParams}`;
 
-    const response = await makeAuthenticatedRequest(fanvueUrl, {
-      method: "GET",
-    }, request);
+      const response = await makeAuthenticatedRequest(fanvueUrl, {
+        method: "GET",
+      }, request);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Fanvue API error:", response.status, errorText);
-      return NextResponse.json(
-        { error: `Fanvue API error: ${response.status}` },
-        { status: response.status }
-      );
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Fanvue API error:", response.status, errorText);
+        return NextResponse.json(
+          { error: `Fanvue API error: ${response.status}` },
+          { status: response.status }
+        );
+      }
+
+      const pageData = await response.json();
+      
+      // Add creators from this page
+      if (pageData.data && Array.isArray(pageData.data)) {
+        allCreators = [...allCreators, ...pageData.data];
+      }
+
+      // Check if there's more data
+      hasMore = pageData.pagination?.hasMore || false;
+      page++;
+      totalPages++;
+
+      // Add small delay between requests to be rate-limit friendly
+      if (hasMore && totalPages < maxPages) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
     }
 
-    const creatorsData = await response.json();
-    return NextResponse.json(creatorsData);
+    console.log(`Fetched ${allCreators.length} creators across ${totalPages} pages`);
+
+    // Return all creators with pagination metadata
+    return NextResponse.json({
+      data: allCreators,
+      pagination: {
+        total: allCreators.length,
+        pagesFetched: totalPages,
+        hasMore: hasMore
+      }
+    });
   } catch (error: any) {
     console.error("Creators API error:", error);
     return NextResponse.json(
