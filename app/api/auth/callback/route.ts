@@ -139,8 +139,11 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Store token type
-    response.cookies.set('fanvue_token_type', tokenData.token_type || 'Bearer', {
+    // Store token type (normalize to proper case)
+    const tokenType = tokenData.token_type || 'Bearer';
+    const normalizedTokenType = tokenType.toLowerCase() === 'bearer' ? 'Bearer' : tokenType;
+    
+    response.cookies.set('fanvue_token_type', normalizedTokenType, {
       httpOnly: true,
       secure: true, // Always secure on HTTPS
       sameSite: 'lax',
