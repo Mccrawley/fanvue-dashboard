@@ -4,10 +4,14 @@ import { useState, useEffect, useCallback } from 'react'
 
 interface Creator {
   uuid: string
-  name: string
-  username: string
+  displayName: string
+  handle: string
+  role: string
+  // Legacy fields for backward compatibility
+  name?: string
+  username?: string
   avatarUrl?: string
-  isVerified: boolean
+  isVerified?: boolean
 }
 
 interface CreatorStats {
@@ -122,15 +126,6 @@ export default function AgencyDashboard() {
         return
       }
 
-      // Debug: Log the structure of first creator to understand field names
-      if (creators.length > 0) {
-        console.log('=== FIRST CREATOR STRUCTURE ===')
-        console.log('Raw creator data:', creators[0])
-        console.log('Available fields:', Object.keys(creators[0]))
-        console.log('name field:', creators[0].name)
-        console.log('username field:', creators[0].username)
-        console.log('avatarUrl field:', creators[0].avatarUrl)
-      }
 
       const initialStats = creators.map((creator: Creator) => ({
         creator,
@@ -548,16 +543,16 @@ export default function AgencyDashboard() {
                   <div className="flex items-center space-x-3 mb-3">
                     <div className="flex-shrink-0">
                       {stat.creator.avatarUrl ? (
-                        <img className="h-10 w-10 rounded-full" src={stat.creator.avatarUrl} alt={stat.creator.name} />
+                        <img className="h-10 w-10 rounded-full" src={stat.creator.avatarUrl} alt={stat.creator.displayName || stat.creator.handle} />
                         ) : (
                           <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                            <span className="text-sm font-medium text-gray-700">{stat.creator.name?.[0] || '?'}</span>
+                            <span className="text-sm font-medium text-gray-700">{stat.creator.displayName?.[0] || stat.creator.handle?.[0] || '?'}</span>
                           </div>
                         )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate flex items-center">
-                        {stat.creator.name}
+                        {stat.creator.displayName || stat.creator.handle || 'Unknown Creator'}
                         {stat.creator.isVerified && (
                           <svg className="ml-1 h-4 w-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -631,15 +626,15 @@ export default function AgencyDashboard() {
                 <div className="space-y-4">
                   <div className="flex items-center space-x-4">
                     {selectedCreator.creator.avatarUrl ? (
-                      <img className="h-16 w-16 rounded-full" src={selectedCreator.creator.avatarUrl} alt={selectedCreator.creator.name} />
+                      <img className="h-16 w-16 rounded-full" src={selectedCreator.creator.avatarUrl} alt={selectedCreator.creator.displayName || selectedCreator.creator.handle} />
                       ) : (
                         <div className="h-16 w-16 rounded-full bg-gray-300 flex items-center justify-center">
-                          <span className="text-xl font-medium text-gray-700">{selectedCreator.creator.name?.[0] || '?'}</span>
+                          <span className="text-xl font-medium text-gray-700">{selectedCreator.creator.displayName?.[0] || selectedCreator.creator.handle?.[0] || '?'}</span>
                         </div>
                       )}
                     <div>
                       <h4 className="text-xl font-medium text-gray-900 flex items-center">
-                        {selectedCreator.creator.name}
+                        {selectedCreator.creator.displayName || selectedCreator.creator.handle || 'Unknown Creator'}
                         {selectedCreator.creator.isVerified && (
                           <svg className="ml-2 h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
