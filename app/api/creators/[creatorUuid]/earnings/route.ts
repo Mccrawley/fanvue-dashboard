@@ -1,40 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-
-// Rate limiting utility
-async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const response = await fetch(url, options);
-    
-    if (response.status === 429) {
-      if (attempt === maxRetries) {
-        throw new Error(`Rate limit exceeded after ${maxRetries} retries`);
-      }
-      
-      // Exponential backoff: 2s, 4s, 8s
-      const delay = Math.pow(2, attempt + 1) * 1000;
-      console.log(`Rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries + 1})`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      continue;
-    }
-    
-    return response;
-  }
-  
-  throw new Error("Unexpected error in fetchWithRetry");
-}
+import { makeAuthenticatedRequest, isAuthenticated, getAuthUrl } from "@/lib/oauth";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ creatorUuid: string }> }
 ) {
   try {
-    const apiKey = process.env.FANVUE_API_KEY;
-    const apiVersion = process.env.FANVUE_API_VERSION || "2025-06-26";
-
-    if (!apiKey) {
+    // Check if user is authenticated
+    if (!isAuthenticated(request)) {
       return NextResponse.json(
-        { error: "API key not configured" },
-        { status: 500 }
+        { 
+          error: "Authentication required",
+          authUrl: getAuthUrl()
+        },
+        { status: 401 }
       );
     }
 
@@ -69,14 +48,9 @@ export async function GET(
 
       const fanvueUrl = `https://api.fanvue.com/creators/${creatorUuid}/insights/earnings?${queryParams}`;
 
-      const response = await fetchWithRetry(fanvueUrl, {
+      const response = await makeAuthenticatedRequest(fanvueUrl, {
         method: "GET",
-        headers: {
-          "X-Fanvue-API-Key": apiKey,
-          "X-Fanvue-API-Version": apiVersion,
-          "Content-Type": "application/json",
-        },
-      });
+      }, request);
 
       if (!response.ok) {
         const errorText = await response.text();
