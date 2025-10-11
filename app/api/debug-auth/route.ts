@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
     // Get tokens from cookies
     const tokens = getTokensFromRequest(request);
     
-    const debugInfo = {
+    const debugInfo: any = {
       message: "OAuth authentication debug",
       timestamp: new Date().toISOString(),
       tokens: tokens ? {
