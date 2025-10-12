@@ -58,29 +58,31 @@ export async function GET(request: NextRequest) {
       let response;
       let approach = "";
       
-      if (apiKey) {
-        // Approach 1: Try API key first (most likely to work)
-        console.log("Trying API key authentication first...");
-        approach = "API Key";
-        response = await fetch(`https://api.fanvue.com/creators?${queryParams}`, {
-          method: "GET",
-          headers: {
-            "X-Fanvue-API-Key": apiKey,
-            "X-Fanvue-API-Version": apiVersion,
-            "Content-Type": "application/json",
-          },
-        });
-        console.log(`API Key request status: ${response.status}`);
-      } else {
-        // Approach 2: Fallback to OAuth
-        console.log("No API key found, trying OAuth...");
-        approach = "OAuth";
-        const fanvueUrl = `https://api.fanvue.com/creators?${queryParams}`;
+      // Use OAuth with the correct agency endpoint
+      console.log("Using OAuth with agency creators endpoint...");
+      approach = "OAuth Agency";
+      
+      // Try the agency creators endpoint first (recommended for OAuth)
+      let fanvueUrl = `https://api.fanvue.com/agencies/creators?${queryParams}`;
+      console.log(`Fetching agency creators from: ${fanvueUrl}`);
+      
+      response = await makeAuthenticatedRequest(fanvueUrl, {
+        method: "GET",
+      }, request);
+      
+      console.log(`Agency creators request status: ${response.status}`);
+      
+      // If agency endpoint fails, try the general creators endpoint
+      if (!response.ok && (response.status === 404 || response.status === 403)) {
+        console.log("Agency endpoint failed, trying general creators endpoint...");
+        approach = "OAuth General";
+        fanvueUrl = `https://api.fanvue.com/creators?${queryParams}`;
         console.log(`Fetching creators from: ${fanvueUrl}`);
+        
         response = await makeAuthenticatedRequest(fanvueUrl, {
           method: "GET",
         }, request);
-        console.log(`OAuth request status: ${response.status}`);
+        console.log(`General creators request status: ${response.status}`);
       }
       
       // If creators endpoint fails, try profile endpoint to test OAuth
