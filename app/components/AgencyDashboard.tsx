@@ -48,10 +48,47 @@ export default function AgencyDashboard() {
   const [error, setError] = useState<string | null>(null)
   const [selectedCreator, setSelectedCreator] = useState<CreatorStats | null>(null)
   const [rateLimitWarning, setRateLimitWarning] = useState(false)
+  const [dateRange, setDateRange] = useState({
+    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
+    endDate: new Date().toISOString().split('T')[0] // today
+  })
+  const [presetRange, setPresetRange] = useState<'7d' | '30d' | '90d' | 'custom'>('30d')
 
   // Batch processing to avoid rate limits
   const BATCH_SIZE = 3; // Process 3 creators at a time
   const BATCH_DELAY = 2000; // 2 second delay between batches
+
+  // Date range handlers
+  const handlePresetRangeChange = (preset: '7d' | '30d' | '90d' | 'custom') => {
+    setPresetRange(preset)
+    const today = new Date()
+    const startDate = new Date()
+    
+    switch (preset) {
+      case '7d':
+        startDate.setDate(today.getDate() - 7)
+        break
+      case '30d':
+        startDate.setDate(today.getDate() - 30)
+        break
+      case '90d':
+        startDate.setDate(today.getDate() - 90)
+        break
+      case 'custom':
+        // Keep current dates for custom
+        return
+    }
+    
+    setDateRange({
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: today.toISOString().split('T')[0]
+    })
+  }
+
+  const handleDateChange = (field: 'startDate' | 'endDate', value: string) => {
+    setDateRange(prev => ({ ...prev, [field]: value }))
+    setPresetRange('custom')
+  }
 
   const fetchCreators = useCallback(async () => {
     try {
@@ -260,14 +297,9 @@ export default function AgencyDashboard() {
   }
 
   const fetchCreatorStats = async (creator: Creator) => {
-    const startDate = new Date()
-    startDate.setDate(startDate.getDate() - 30) // Last 30 days
-    const startDateStr = startDate.toISOString().split('T')[0]
-    
-    // Extend end date to include more recent data (up to 7 days in the future to catch any processing delays)
-    const endDate = new Date()
-    endDate.setDate(endDate.getDate() + 7) // Include next 7 days to catch processing delays
-    const endDateStr = endDate.toISOString().split('T')[0]
+    // Use the selected date range
+    const startDateStr = dateRange.startDate
+    const endDateStr = dateRange.endDate
 
     let totalRevenue = 0
     let totalTransactions = 0
@@ -422,6 +454,77 @@ export default function AgencyDashboard() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Agency Dashboard</h1>
           <p className="mt-2 text-gray-600">Multi-creator insights and analytics</p>
+        </div>
+
+        {/* Date Range Controls */}
+        <div className="mb-6 bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Date Range Filter</h2>
+          <div className="flex flex-wrap gap-4 items-center">
+            {/* Preset buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => handlePresetRangeChange('7d')}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  presetRange === '7d'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Last 7 days
+              </button>
+              <button
+                onClick={() => handlePresetRangeChange('30d')}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  presetRange === '30d'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Last 30 days
+              </button>
+              <button
+                onClick={() => handlePresetRangeChange('90d')}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  presetRange === '90d'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Last 90 days
+              </button>
+            </div>
+
+            {/* Custom date inputs */}
+            <div className="flex gap-4 items-center">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">From:</label>
+                <input
+                  type="date"
+                  value={dateRange.startDate}
+                  onChange={(e) => handleDateChange('startDate', e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">To:</label>
+                <input
+                  type="date"
+                  value={dateRange.endDate}
+                  onChange={(e) => handleDateChange('endDate', e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <button
+                onClick={() => fetchCreators()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
+              >
+                Apply Filter
+              </button>
+            </div>
+          </div>
+          <div className="mt-2 text-sm text-gray-500">
+            Showing data from {dateRange.startDate} to {dateRange.endDate}
+          </div>
         </div>
 
         {/* Rate Limit Warning */}
