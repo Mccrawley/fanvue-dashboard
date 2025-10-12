@@ -247,17 +247,24 @@ export default function AgencyDashboard() {
           })
 
           if (result.status === 'fulfilled') {
+            console.log(`=== UPDATING CREATOR STATS FOR ${creator.displayName || creator.handle} ===`)
+            console.log(`Result value:`, result.value)
             setCreatorStats(prev => {
               if (!prev || !Array.isArray(prev)) {
                 console.warn('Invalid creator stats state')
                 return prev
               }
               
-              return prev.map(stat => 
-                stat.creator.uuid === creator.uuid 
-                  ? { ...stat, ...result.value, isLoading: false, hasError: false }
-                  : stat
-              )
+              const updated = prev.map(stat => {
+                if (stat.creator.uuid === creator.uuid) {
+                  const updatedStat = { ...stat, ...result.value, isLoading: false, hasError: false }
+                  console.log(`Updated stat for ${creator.displayName || creator.handle}:`, updatedStat)
+                  return updatedStat
+                }
+                return stat
+              })
+              console.log(`All creator stats after update:`, updated)
+              return updated
             })
                       } else {
               const errorMsg = result.reason?.message || 'Failed to load data'
