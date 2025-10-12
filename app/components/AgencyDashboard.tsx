@@ -308,11 +308,16 @@ export default function AgencyDashboard() {
 
     try {
       // Fetch with rate limiting parameters
+      console.log(`=== FETCHING STATS FOR ${creator.displayName || creator.handle} ===`)
       const [earningsResponse, followersResponse, subscribersResponse] = await Promise.all([
         fetch(`/api/creators/${creator.uuid}/earnings?startDate=${startDateStr}T00:00:00Z&endDate=${endDateStr}T23:59:59Z&maxPages=3`).catch(() => null),
         fetch(`/api/creators/${creator.uuid}/followers?maxPages=2`).catch(() => null),
         fetch(`/api/creators/${creator.uuid}/subscribers?maxPages=2`).catch(() => null)
       ])
+      
+      console.log(`Earnings response status: ${earningsResponse?.status || 'failed'}`)
+      console.log(`Followers response status: ${followersResponse?.status || 'failed'}`)
+      console.log(`Subscribers response status: ${subscribersResponse?.status || 'failed'}`)
 
       // Process earnings data
       if (earningsResponse?.ok) {
@@ -326,13 +331,21 @@ export default function AgencyDashboard() {
       // Process followers data
       if (followersResponse?.ok) {
         const followersData = await followersResponse.json()
+        console.log(`Followers data for ${creator.displayName || creator.handle}:`, followersData)
         totalFollowers = followersData.data?.length || 0
+        console.log(`Total followers: ${totalFollowers}`)
+      } else {
+        console.log(`Followers API failed for ${creator.displayName || creator.handle}:`, followersResponse?.status)
       }
 
       // Process subscribers data
       if (subscribersResponse?.ok) {
         const subscribersData = await subscribersResponse.json()
+        console.log(`Subscribers data for ${creator.displayName || creator.handle}:`, subscribersData)
         totalSubscribers = subscribersData.data?.length || 0
+        console.log(`Total subscribers: ${totalSubscribers}`)
+      } else {
+        console.log(`Subscribers API failed for ${creator.displayName || creator.handle}:`, subscribersResponse?.status)
       }
 
       return {
