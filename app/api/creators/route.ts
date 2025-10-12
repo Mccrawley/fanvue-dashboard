@@ -51,13 +51,51 @@ export async function GET(request: NextRequest) {
       queryParams.append("page", page.toString());
       queryParams.append("size", pageSize.toString());
 
+      // Try different endpoints to see which one works with OAuth
       const fanvueUrl = `https://api.fanvue.com/creators?${queryParams}`;
       
       console.log(`Fetching creators from: ${fanvueUrl}`);
 
-      const response = await makeAuthenticatedRequest(fanvueUrl, {
+      // Try with OAuth token first
+      let response = await makeAuthenticatedRequest(fanvueUrl, {
         method: "GET",
       }, request);
+      
+      // If OAuth fails or returns empty data, try with API key as fallback
+      if (!response.ok || response.status === 200) {
+        const responseData = await response.clone().json().catch(() => ({}));
+        if (responseData.data && responseData.data.length === 0) {
+          console.log("OAuth returned empty data, trying with API key...");
+          
+          const apiKey = process.env.FANVUE_API_KEY;
+          const apiVersion = process.env.FANVUE_API_VERSION || "2025-06-26";
+          
+          if (apiKey) {
+            response = await fetch(fanvueUrl, {
+              method: "GET",
+              headers: {
+                "X-Fanvue-API-Key": apiKey,
+                "X-Fanvue-API-Version": apiVersion,
+                "Content-Type": "application/json",
+              },
+            });
+            console.log(`API Key request status: ${response.status}`);
+          }
+        }
+      }
+      
+      // If creators endpoint fails, try profile endpoint to test OAuth
+      if (!response.ok && response.status === 403) {
+        console.log("Creators endpoint returned 403, trying profile endpoint...");
+        const profileResponse = await makeAuthenticatedRequest('https://api.fanvue.com/profile', {
+          method: "GET",
+        }, request);
+        console.log(`Profile endpoint status: ${profileResponse.status}`);
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          console.log("Profile data:", JSON.stringify(profileData, null, 2));
+        }
+      }
 
       console.log(`Fanvue API response status: ${response.status}`);
 
