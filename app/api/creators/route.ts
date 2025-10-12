@@ -51,37 +51,36 @@ export async function GET(request: NextRequest) {
       queryParams.append("page", page.toString());
       queryParams.append("size", pageSize.toString());
 
-      // Try different endpoints to see which one works with OAuth
-      const fanvueUrl = `https://api.fanvue.com/creators?${queryParams}`;
+      // Try multiple approaches to get creators data
+      const apiKey = process.env.FANVUE_API_KEY;
+      const apiVersion = process.env.FANVUE_API_VERSION || "2025-06-26";
       
-      console.log(`Fetching creators from: ${fanvueUrl}`);
-
-      // Try with OAuth token first
-      let response = await makeAuthenticatedRequest(fanvueUrl, {
-        method: "GET",
-      }, request);
+      let response;
+      let approach = "";
       
-      // If OAuth fails or returns empty data, try with API key as fallback
-      if (!response.ok || response.status === 200) {
-        const responseData = await response.clone().json().catch(() => ({}));
-        if (responseData.data && responseData.data.length === 0) {
-          console.log("OAuth returned empty data, trying with API key...");
-          
-          const apiKey = process.env.FANVUE_API_KEY;
-          const apiVersion = process.env.FANVUE_API_VERSION || "2025-06-26";
-          
-          if (apiKey) {
-            response = await fetch(fanvueUrl, {
-              method: "GET",
-              headers: {
-                "X-Fanvue-API-Key": apiKey,
-                "X-Fanvue-API-Version": apiVersion,
-                "Content-Type": "application/json",
-              },
-            });
-            console.log(`API Key request status: ${response.status}`);
-          }
-        }
+      if (apiKey) {
+        // Approach 1: Try API key first (most likely to work)
+        console.log("Trying API key authentication first...");
+        approach = "API Key";
+        response = await fetch(`https://api.fanvue.com/creators?${queryParams}`, {
+          method: "GET",
+          headers: {
+            "X-Fanvue-API-Key": apiKey,
+            "X-Fanvue-API-Version": apiVersion,
+            "Content-Type": "application/json",
+          },
+        });
+        console.log(`API Key request status: ${response.status}`);
+      } else {
+        // Approach 2: Fallback to OAuth
+        console.log("No API key found, trying OAuth...");
+        approach = "OAuth";
+        const fanvueUrl = `https://api.fanvue.com/creators?${queryParams}`;
+        console.log(`Fetching creators from: ${fanvueUrl}`);
+        response = await makeAuthenticatedRequest(fanvueUrl, {
+          method: "GET",
+        }, request);
+        console.log(`OAuth request status: ${response.status}`);
       }
       
       // If creators endpoint fails, try profile endpoint to test OAuth
@@ -110,14 +109,25 @@ export async function GET(request: NextRequest) {
 
       const pageData = await response.json();
       
-      console.log(`Page ${page} data:`, JSON.stringify(pageData, null, 2));
+      console.log(`=== PAGE ${page} RESPONSE (${approach}) ===`);
+      console.log(`Response status: ${response.status}`);
+      console.log(`Response headers:`, Object.fromEntries(response.headers.entries()));
+      console.log(`Page data:`, JSON.stringify(pageData, null, 2));
+      console.log(`Page data keys:`, Object.keys(pageData));
       
       // Add creators from this page
       if (pageData.data && Array.isArray(pageData.data)) {
-        console.log(`Found ${pageData.data.length} creators on page ${page}`);
+        console.log(`✅ Found ${pageData.data.length} creators on page ${page}`);
         allCreators = [...allCreators, ...pageData.data];
       } else {
-        console.log(`No creators data found on page ${page}. PageData structure:`, Object.keys(pageData));
+        console.log(`❌ No creators data found on page ${page}`);
+        console.log(`PageData structure:`, Object.keys(pageData));
+        if (pageData.error) {
+          console.log(`API Error:`, pageData.error);
+        }
+        if (pageData.message) {
+          console.log(`API Message:`, pageData.message);
+        }
       }
 
       // Check if there's more data
