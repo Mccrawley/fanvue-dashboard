@@ -46,11 +46,27 @@ export async function GET(
       if (cursor) queryParams.append("cursor", cursor);
       queryParams.append("size", "50"); // Use max size per request
 
-      const fanvueUrl = `https://api.fanvue.com/creators/${creatorUuid}/insights/earnings?${queryParams}`;
+      // Try agency earnings endpoint first (recommended for OAuth)
+      let fanvueUrl = `https://api.fanvue.com/agencies/creators/${creatorUuid}/insights/earnings?${queryParams}`;
+      console.log(`Fetching agency earnings from: ${fanvueUrl}`);
 
-      const response = await makeAuthenticatedRequest(fanvueUrl, {
+      let response = await makeAuthenticatedRequest(fanvueUrl, {
         method: "GET",
       }, request);
+
+      console.log(`Agency earnings request status: ${response.status}`);
+
+      // If agency endpoint fails, try the general creators endpoint
+      if (!response.ok && (response.status === 404 || response.status === 403)) {
+        console.log("Agency earnings endpoint failed, trying general creators endpoint...");
+        fanvueUrl = `https://api.fanvue.com/creators/${creatorUuid}/insights/earnings?${queryParams}`;
+        console.log(`Fetching earnings from: ${fanvueUrl}`);
+        
+        response = await makeAuthenticatedRequest(fanvueUrl, {
+          method: "GET",
+        }, request);
+        console.log(`General earnings request status: ${response.status}`);
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -62,7 +78,21 @@ export async function GET(
       }
 
       const earningsData = await response.json();
-      allEarnings = [...allEarnings, ...earningsData.data];
+      
+      console.log(`=== EARNINGS PAGE ${pageCount + 1} RESPONSE ===`);
+      console.log(`Response status: ${response.status}`);
+      console.log(`Earnings data structure:`, JSON.stringify(earningsData, null, 2));
+      
+      if (earningsData.data && Array.isArray(earningsData.data)) {
+        console.log(`✅ Found ${earningsData.data.length} earnings entries on page ${pageCount + 1}`);
+        allEarnings = [...allEarnings, ...earningsData.data];
+      } else {
+        console.log(`❌ No earnings data found on page ${pageCount + 1}`);
+        console.log(`Earnings data structure:`, Object.keys(earningsData));
+        if (earningsData.error) {
+          console.log(`API Error:`, earningsData.error);
+        }
+      }
       
       // Check if there's more data
       cursor = earningsData.nextCursor;

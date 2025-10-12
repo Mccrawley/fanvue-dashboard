@@ -322,10 +322,26 @@ export default function AgencyDashboard() {
       // Process earnings data
       if (earningsResponse?.ok) {
         const earningsData = await earningsResponse.json()
+        console.log(`Earnings data for ${creator.displayName || creator.handle}:`, earningsData)
         if (earningsData.data) {
-          totalRevenue = earningsData.data.reduce((sum: number, item: any) => sum + (item.net / 100), 0)
+          console.log(`Raw earnings data:`, earningsData.data)
+          console.log(`Number of earnings entries:`, earningsData.data.length)
+          
+          // Calculate revenue from net amounts (convert from cents to dollars)
+          totalRevenue = earningsData.data.reduce((sum: number, item: any) => {
+            const netAmount = item.net / 100 // Convert cents to dollars
+            console.log(`Earnings item:`, item, `Net amount: $${netAmount}`)
+            return sum + netAmount
+          }, 0)
+          
           totalTransactions = earningsData.data.length
+          console.log(`Total revenue calculated: $${totalRevenue.toFixed(2)}`)
+          console.log(`Total transactions: ${totalTransactions}`)
+        } else {
+          console.log(`No earnings data found for ${creator.displayName || creator.handle}`)
         }
+      } else {
+        console.log(`Earnings API failed for ${creator.displayName || creator.handle}:`, earningsResponse?.status)
       }
 
       // Process followers data
