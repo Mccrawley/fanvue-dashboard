@@ -52,10 +52,14 @@ export async function GET(request: NextRequest) {
       queryParams.append("size", pageSize.toString());
 
       const fanvueUrl = `https://api.fanvue.com/creators?${queryParams}`;
+      
+      console.log(`Fetching creators from: ${fanvueUrl}`);
 
       const response = await makeAuthenticatedRequest(fanvueUrl, {
         method: "GET",
       }, request);
+
+      console.log(`Fanvue API response status: ${response.status}`);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -68,13 +72,19 @@ export async function GET(request: NextRequest) {
 
       const pageData = await response.json();
       
+      console.log(`Page ${page} data:`, JSON.stringify(pageData, null, 2));
+      
       // Add creators from this page
       if (pageData.data && Array.isArray(pageData.data)) {
+        console.log(`Found ${pageData.data.length} creators on page ${page}`);
         allCreators = [...allCreators, ...pageData.data];
+      } else {
+        console.log(`No creators data found on page ${page}. PageData structure:`, Object.keys(pageData));
       }
 
       // Check if there's more data
       hasMore = pageData.pagination?.hasMore || false;
+      console.log(`Has more pages: ${hasMore}`);
       page++;
       totalPages++;
 
