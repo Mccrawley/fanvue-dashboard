@@ -690,7 +690,7 @@ export default function AgencyDashboard() {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {creatorStats.map((stat) => (
-                <div key={stat.creator.uuid} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedCreator(stat)}>
+                <div key={`${stat.creator.uuid}-${stat.revenue}-${stat.followers}-${stat.subscribers}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedCreator(stat)}>
                   <div className="flex items-center space-x-3 mb-3">
                     <div className="flex-shrink-0">
                       {stat.creator.avatarUrl ? (
@@ -734,6 +734,7 @@ export default function AgencyDashboard() {
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">Revenue:</span>
                         <span className="font-medium text-green-600">${stat.revenue.toFixed(2)}</span>
+                        {/* Debug: {JSON.stringify({revenue: stat.revenue, followers: stat.followers, subscribers: stat.subscribers})} */}
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">Transactions:</span>
