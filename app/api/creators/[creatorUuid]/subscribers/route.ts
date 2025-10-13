@@ -34,11 +34,27 @@ export async function GET(
       queryParams.append("page", page.toString());
       queryParams.append("size", "50"); // Use max size per request
 
-      const fanvueUrl = `https://api.fanvue.com/creators/${creatorUuid}/subscribers?${queryParams}`;
+      // Try agency subscribers endpoint first (recommended for OAuth)
+      let fanvueUrl = `https://api.fanvue.com/agencies/creators/${creatorUuid}/subscribers?${queryParams}`;
+      console.log(`Fetching agency subscribers from: ${fanvueUrl}`);
 
-      const response = await makeAuthenticatedRequest(fanvueUrl, {
+      let response = await makeAuthenticatedRequest(fanvueUrl, {
         method: "GET",
       }, request);
+
+      console.log(`Agency subscribers request status: ${response.status}`);
+
+      // If agency endpoint fails, try the general creators endpoint
+      if (!response.ok && (response.status === 404 || response.status === 403)) {
+        console.log("Agency subscribers endpoint failed, trying general creators endpoint...");
+        fanvueUrl = `https://api.fanvue.com/creators/${creatorUuid}/subscribers?${queryParams}`;
+        console.log(`Fetching subscribers from: ${fanvueUrl}`);
+        
+        response = await makeAuthenticatedRequest(fanvueUrl, {
+          method: "GET",
+        }, request);
+        console.log(`General subscribers request status: ${response.status}`);
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -50,7 +66,21 @@ export async function GET(
       }
 
       const subscribersData = await response.json();
-      allSubscribers = [...allSubscribers, ...subscribersData.data];
+      
+      console.log(`=== SUBSCRIBERS PAGE ${page} RESPONSE ===`);
+      console.log(`Response status: ${response.status}`);
+      console.log(`Subscribers data structure:`, JSON.stringify(subscribersData, null, 2));
+      
+      if (subscribersData.data && Array.isArray(subscribersData.data)) {
+        console.log(`✅ Found ${subscribersData.data.length} subscribers on page ${page}`);
+        allSubscribers = [...allSubscribers, ...subscribersData.data];
+      } else {
+        console.log(`❌ No subscribers data found on page ${page}`);
+        console.log(`Subscribers data structure:`, Object.keys(subscribersData));
+        if (subscribersData.error) {
+          console.log(`API Error:`, subscribersData.error);
+        }
+      }
       
       // Check if there's more data
       hasMore = subscribersData.pagination?.hasMore || false;

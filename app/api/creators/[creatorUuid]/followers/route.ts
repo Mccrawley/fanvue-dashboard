@@ -34,11 +34,27 @@ export async function GET(
       queryParams.append("page", page.toString());
       queryParams.append("size", "50"); // Use max size per request
 
-      const fanvueUrl = `https://api.fanvue.com/creators/${creatorUuid}/followers?${queryParams}`;
+      // Try agency followers endpoint first (recommended for OAuth)
+      let fanvueUrl = `https://api.fanvue.com/agencies/creators/${creatorUuid}/followers?${queryParams}`;
+      console.log(`Fetching agency followers from: ${fanvueUrl}`);
 
-      const response = await makeAuthenticatedRequest(fanvueUrl, {
+      let response = await makeAuthenticatedRequest(fanvueUrl, {
         method: "GET",
       }, request);
+
+      console.log(`Agency followers request status: ${response.status}`);
+
+      // If agency endpoint fails, try the general creators endpoint
+      if (!response.ok && (response.status === 404 || response.status === 403)) {
+        console.log("Agency followers endpoint failed, trying general creators endpoint...");
+        fanvueUrl = `https://api.fanvue.com/creators/${creatorUuid}/followers?${queryParams}`;
+        console.log(`Fetching followers from: ${fanvueUrl}`);
+        
+        response = await makeAuthenticatedRequest(fanvueUrl, {
+          method: "GET",
+        }, request);
+        console.log(`General followers request status: ${response.status}`);
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -50,7 +66,21 @@ export async function GET(
       }
 
       const followersData = await response.json();
-      allFollowers = [...allFollowers, ...followersData.data];
+      
+      console.log(`=== FOLLOWERS PAGE ${page} RESPONSE ===`);
+      console.log(`Response status: ${response.status}`);
+      console.log(`Followers data structure:`, JSON.stringify(followersData, null, 2));
+      
+      if (followersData.data && Array.isArray(followersData.data)) {
+        console.log(`✅ Found ${followersData.data.length} followers on page ${page}`);
+        allFollowers = [...allFollowers, ...followersData.data];
+      } else {
+        console.log(`❌ No followers data found on page ${page}`);
+        console.log(`Followers data structure:`, Object.keys(followersData));
+        if (followersData.error) {
+          console.log(`API Error:`, followersData.error);
+        }
+      }
       
       // Check if there's more data
       hasMore = followersData.pagination?.hasMore || false;
