@@ -11,8 +11,14 @@ This guide explains how to connect your Fanvue Dashboard API to Power BI for adv
 ### 1. **Creators Summary** (Aggregated Data)
 **Best for:** High-level dashboards, KPI tracking, creator comparisons
 
+**OAuth Version (requires authentication):**
 ```
 GET /api/powerbi/creators-summary?startDate=2025-01-01&endDate=2025-12-31
+```
+
+**Public Version (API key authentication):**
+```
+GET /api/powerbi/public/creators-summary?apiKey=YOUR_KEY&startDate=2025-01-01&endDate=2025-12-31
 ```
 
 **Query Parameters:**
@@ -50,8 +56,14 @@ GET /api/powerbi/creators-summary?startDate=2025-01-01&endDate=2025-12-31
 ### 2. **Earnings Detail** (Transaction-Level Data)
 **Best for:** Time-series analysis, trend analysis, detailed reporting
 
+**OAuth Version (requires authentication):**
 ```
 GET /api/powerbi/earnings-detail?startDate=2025-01-01&endDate=2025-12-31
+```
+
+**Public Version (API key authentication):**
+```
+GET /api/powerbi/public/earnings-detail?apiKey=YOUR_KEY&startDate=2025-01-01&endDate=2025-12-31
 ```
 
 **Query Parameters:**
@@ -106,16 +118,26 @@ GET /api/powerbi/earnings-detail?startDate=2025-01-01&endDate=2025-12-31
 
 ### Step 2: Authentication
 
-Since the API uses OAuth authentication, you'll need to:
+**Recommended: Use Public Endpoints with API Key**
 
-**Option A: Public Endpoint (Recommended for Power BI)**
-- Create a public-facing endpoint that uses a secure API key
-- Set `POWERBI_API_KEY` in your environment variables
-- Access via: `/api/powerbi/creators-summary?apiKey=YOUR_KEY`
+1. **Set up your API key:**
+   - Add `POWERBI_API_KEY=your-secure-key-here` to your environment variables
+   - Use a strong, unique key (e.g., `pb_1234567890abcdef`)
+   - Keep this key secure and don't share it publicly
 
-**Option B: OAuth Flow**
-- Use Power BI's Web connector with OAuth
-- Configure custom headers with your access token
+2. **Test the endpoint:**
+   ```
+   https://your-dashboard.vercel.app/api/powerbi/public/creators-summary?apiKey=YOUR_KEY
+   ```
+
+3. **Use in Power BI:**
+   - Enter the full URL with your API key
+   - No additional authentication needed
+
+**Alternative: OAuth Endpoints**
+- Use `/api/powerbi/creators-summary` (requires browser authentication)
+- More complex setup but more secure
+- Good for development/testing
 
 ### Step 3: Transform Data
 
