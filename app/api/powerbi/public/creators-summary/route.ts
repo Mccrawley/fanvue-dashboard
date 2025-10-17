@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { makeAuthenticatedRequest } from "@/lib/oauth";
 
 /**
- * Public Power BI Endpoint: Creators Summary
+ * Power BI Endpoint: Creators Summary
  * 
- * This endpoint is designed for Power BI integration and uses API key authentication
- * instead of OAuth to avoid browser-based authentication issues.
+ * This endpoint is designed for Power BI integration and uses OAuth authentication
+ * for secure access to Fanvue API data.
  * 
  * Query Parameters:
- * - apiKey: Your Power BI API key (set in environment variables)
  * - startDate: ISO date string (e.g., 2025-01-01)
  * - endDate: ISO date string (e.g., 2025-12-31)
  * 
@@ -28,20 +28,6 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    
-    // Check API key authentication
-    const apiKey = searchParams.get("apiKey");
-    const expectedApiKey = process.env.POWERBI_API_KEY;
-    
-    if (!apiKey || !expectedApiKey || apiKey !== expectedApiKey) {
-      return NextResponse.json(
-        { 
-          error: "Invalid or missing API key",
-          message: "Please provide a valid apiKey parameter"
-        },
-        { status: 401 }
-      );
-    }
 
     // Default to last 30 days if no date range provided
     const defaultEndDate = new Date();
@@ -54,27 +40,12 @@ export async function GET(request: NextRequest) {
     console.log(`=== PUBLIC POWER BI CREATORS SUMMARY REQUEST ===`);
     console.log(`Date range: ${startDate} to ${endDate}`);
 
-    // Step 1: Fetch all creators using API key
-    const apiKeyEnv = process.env.FANVUE_API_KEY;
-    const apiVersion = process.env.FANVUE_API_VERSION || "2025-06-26";
-    
-    if (!apiKeyEnv) {
-      return NextResponse.json(
-        { error: "Fanvue API key not configured" },
-        { status: 500 }
-      );
-    }
-
+    // Step 1: Fetch all creators using OAuth
     const creatorsUrl = `https://api.fanvue.com/agencies/creators?size=50`;
     console.log(`Fetching creators from: ${creatorsUrl}`);
     
-    const creatorsResponse = await fetch(creatorsUrl, {
+    const creatorsResponse = await makeAuthenticatedRequest(creatorsUrl, {
       method: "GET",
-      headers: {
-        "X-Fanvue-API-Key": apiKeyEnv,
-        "X-Fanvue-API-Version": apiVersion,
-        "Content-Type": "application/json",
-      },
     });
 
     if (!creatorsResponse.ok) {
@@ -100,45 +71,24 @@ export async function GET(request: NextRequest) {
 
         console.log(`Fetching stats for ${creatorName} (${creatorId})...`);
 
-        // Fetch earnings, followers, and subscribers in parallel
+        // Fetch earnings, followers, and subscribers in parallel using OAuth
         const [earningsRes, followersRes, subscribersRes] = await Promise.allSettled([
           // Earnings with date range
-          fetch(
+          makeAuthenticatedRequest(
             `https://api.fanvue.com/agencies/creators/${creatorId}/insights/earnings?startDate=${startDate}T00:00:00Z&endDate=${endDate}T23:59:59Z&size=50`,
-            {
-              method: "GET",
-              headers: {
-                "X-Fanvue-API-Key": apiKeyEnv,
-                "X-Fanvue-API-Version": apiVersion,
-                "Content-Type": "application/json",
-              },
-            }
+            { method: "GET" }
           ).catch(() => null),
           
           // Followers (current count, not date-filtered)
-          fetch(
+          makeAuthenticatedRequest(
             `https://api.fanvue.com/agencies/creators/${creatorId}/followers?size=50`,
-            {
-              method: "GET",
-              headers: {
-                "X-Fanvue-API-Key": apiKeyEnv,
-                "X-Fanvue-API-Version": apiVersion,
-                "Content-Type": "application/json",
-              },
-            }
+            { method: "GET" }
           ).catch(() => null),
           
           // Subscribers (current count, not date-filtered)
-          fetch(
+          makeAuthenticatedRequest(
             `https://api.fanvue.com/agencies/creators/${creatorId}/subscribers?size=50`,
-            {
-              method: "GET",
-              headers: {
-                "X-Fanvue-API-Key": apiKeyEnv,
-                "X-Fanvue-API-Version": apiVersion,
-                "Content-Type": "application/json",
-              },
-            }
+            { method: "GET" }
           ).catch(() => null)
         ]);
 
@@ -216,7 +166,7 @@ export async function GET(request: NextRequest) {
         endDate,
         totalCreators: successfulSummaries.length,
         apiVersion: "1.0",
-        authentication: "apiKey"
+        authentication: "oauth"
       },
       data: successfulSummaries
     });

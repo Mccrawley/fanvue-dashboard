@@ -16,9 +16,9 @@ This guide explains how to connect your Fanvue Dashboard API to Power BI for adv
 GET /api/powerbi/creators-summary?startDate=2025-01-01&endDate=2025-12-31
 ```
 
-**Public Version (API key authentication):**
+**Public Version (OAuth authentication):**
 ```
-GET /api/powerbi/public/creators-summary?apiKey=YOUR_KEY&startDate=2025-01-01&endDate=2025-12-31
+GET /api/powerbi/public/creators-summary?startDate=2025-01-01&endDate=2025-12-31
 ```
 
 **Query Parameters:**
@@ -61,9 +61,9 @@ GET /api/powerbi/public/creators-summary?apiKey=YOUR_KEY&startDate=2025-01-01&en
 GET /api/powerbi/earnings-detail?startDate=2025-01-01&endDate=2025-12-31
 ```
 
-**Public Version (API key authentication):**
+**Public Version (OAuth authentication):**
 ```
-GET /api/powerbi/public/earnings-detail?apiKey=YOUR_KEY&startDate=2025-01-01&endDate=2025-12-31
+GET /api/powerbi/public/earnings-detail?startDate=2025-01-01&endDate=2025-12-31
 ```
 
 **Query Parameters:**
@@ -118,21 +118,23 @@ GET /api/powerbi/public/earnings-detail?apiKey=YOUR_KEY&startDate=2025-01-01&end
 
 ### Step 2: Authentication
 
-**Recommended: Use Public Endpoints with API Key**
+**Current Method: OAuth 2.0 Authentication**
 
-1. **Set up your API key:**
-   - Add `POWERBI_API_KEY=your-secure-key-here` to your environment variables
-   - Use a strong, unique key (e.g., `pb_1234567890abcdef`)
-   - Keep this key secure and don't share it publicly
+The Power BI endpoints now use OAuth 2.0 authentication for secure access to Fanvue API data. This provides:
+
+- ✅ **Secure authentication** with Fanvue API
+- ✅ **Real-time data access** from all creators  
+- ✅ **No API key management** required
+- ✅ **Automatic token refresh** handling
 
 2. **Test the endpoint:**
    ```
-   https://your-dashboard.vercel.app/api/powerbi/public/creators-summary?apiKey=YOUR_KEY
+   https://your-dashboard.vercel.app/api/powerbi/public/creators-summary
    ```
 
 3. **Use in Power BI:**
-   - Enter the full URL with your API key
-   - No additional authentication needed
+   - Enter the full URL directly
+   - OAuth authentication is handled server-side
 
 **Alternative: OAuth Endpoints**
 - Use `/api/powerbi/creators-summary` (requires browser authentication)

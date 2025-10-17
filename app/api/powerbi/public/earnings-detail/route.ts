@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { makeAuthenticatedRequest } from "@/lib/oauth";
 
 /**
- * Public Power BI Endpoint: Earnings Detail
+ * Power BI Endpoint: Earnings Detail
  * 
  * This endpoint provides transaction-level earnings data for Power BI integration
- * Uses API key authentication for public access.
+ * Uses OAuth authentication for secure access to Fanvue API data.
  * 
  * Query Parameters:
- * - apiKey: Your Power BI API key
  * - startDate: ISO date string (e.g., 2025-01-01)
  * - endDate: ISO date string (e.g., 2025-12-31)
  * - creatorId: (optional) Filter by specific creator UUID
@@ -28,20 +28,6 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    
-    // Check API key authentication
-    const apiKey = searchParams.get("apiKey");
-    const expectedApiKey = process.env.POWERBI_API_KEY;
-    
-    if (!apiKey || !expectedApiKey || apiKey !== expectedApiKey) {
-      return NextResponse.json(
-        { 
-          error: "Invalid or missing API key",
-          message: "Please provide a valid apiKey parameter"
-        },
-        { status: 401 }
-      );
-    }
 
     // Default to last 30 days if no date range provided
     const defaultEndDate = new Date();
@@ -56,35 +42,19 @@ export async function GET(request: NextRequest) {
     console.log(`Date range: ${startDate} to ${endDate}`);
     if (creatorIdFilter) console.log(`Creator filter: ${creatorIdFilter}`);
 
-    // Get API credentials
-    const apiKeyEnv = process.env.FANVUE_API_KEY;
-    const apiVersion = process.env.FANVUE_API_VERSION || "2025-06-26";
-    
-    if (!apiKeyEnv) {
-      return NextResponse.json(
-        { error: "Fanvue API key not configured" },
-        { status: 500 }
-      );
-    }
-
-    // Step 1: Fetch all creators (or single creator if filtered)
+    // Step 1: Fetch all creators (or single creator if filtered) using OAuth
     let creators: any[] = [];
     
     if (creatorIdFilter) {
       // Fetch single creator data
       creators = [{ uuid: creatorIdFilter, displayName: 'Filtered Creator', handle: 'filtered' }];
     } else {
-      // Fetch all creators
+      // Fetch all creators using OAuth
       const creatorsUrl = `https://api.fanvue.com/agencies/creators?size=50`;
       console.log(`Fetching creators from: ${creatorsUrl}`);
       
-      const creatorsResponse = await fetch(creatorsUrl, {
+      const creatorsResponse = await makeAuthenticatedRequest(creatorsUrl, {
         method: "GET",
-        headers: {
-          "X-Fanvue-API-Key": apiKeyEnv,
-          "X-Fanvue-API-Version": apiVersion,
-          "Content-Type": "application/json",
-        },
       });
 
       if (!creatorsResponse.ok) {
@@ -128,13 +98,8 @@ export async function GET(request: NextRequest) {
 
           const earningsUrl = `https://api.fanvue.com/agencies/creators/${creatorId}/insights/earnings?${queryParams}`;
           
-          const earningsResponse = await fetch(earningsUrl, {
+          const earningsResponse = await makeAuthenticatedRequest(earningsUrl, {
             method: "GET",
-            headers: {
-              "X-Fanvue-API-Key": apiKeyEnv,
-              "X-Fanvue-API-Version": apiVersion,
-              "Content-Type": "application/json",
-            },
           });
 
           if (!earningsResponse.ok) {
@@ -196,7 +161,7 @@ export async function GET(request: NextRequest) {
         totalTransactions: allTransactions.length,
         totalCreators: creators.length,
         apiVersion: "1.0",
-        authentication: "apiKey"
+        authentication: "oauth"
       },
       data: allTransactions
     });
