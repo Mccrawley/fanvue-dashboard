@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const clientId = process.env.FANVUE_CLIENT_ID;
     const clientSecret = process.env.FANVUE_OAUTH_CLIENT_SECRET;
 
-    const debugInfo = {
+    const debugInfo: any = {
       timestamp: new Date().toISOString(),
       environment: {
         hasServiceAccessToken: !!serviceAccessToken,
