@@ -149,19 +149,19 @@ export async function GET(request: NextRequest) {
         const [earningsRes, followersRes, subscribersRes] = await Promise.allSettled([
           // Earnings with date range
           makeServiceAuthenticatedRequest(
-            `https://api.fanvue.com/agencies/creators/${creatorId}/insights/earnings?startDate=${startDate}T00:00:00Z&endDate=${endDate}T23:59:59Z&size=50`,
+            `https://api.fanvue.com/creators/${creatorId}/insights/earnings?startDate=${startDate}T00:00:00Z&endDate=${endDate}T23:59:59Z&size=50`,
             { method: "GET" }
           ).catch(() => null),
           
           // Followers (current count, not date-filtered)
           makeServiceAuthenticatedRequest(
-            `https://api.fanvue.com/agencies/creators/${creatorId}/followers?size=50`,
+            `https://api.fanvue.com/creators/${creatorId}/followers?size=50`,
             { method: "GET" }
           ).catch(() => null),
           
           // Subscribers (current count, not date-filtered)
           makeServiceAuthenticatedRequest(
-            `https://api.fanvue.com/agencies/creators/${creatorId}/subscribers?size=50`,
+            `https://api.fanvue.com/creators/${creatorId}/subscribers?size=50`,
             { method: "GET" }
           ).catch(() => null)
         ]);

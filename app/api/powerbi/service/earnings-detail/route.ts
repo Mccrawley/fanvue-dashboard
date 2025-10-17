@@ -170,7 +170,7 @@ export async function GET(request: NextRequest) {
           queryParams.append("size", "50");
           if (cursor) queryParams.append("cursor", cursor);
 
-          const earningsUrl = `https://api.fanvue.com/agencies/creators/${creatorId}/insights/earnings?${queryParams}`;
+          const earningsUrl = `https://api.fanvue.com/creators/${creatorId}/insights/earnings?${queryParams}`;
           
           const earningsResponse = await makeServiceAuthenticatedRequest(earningsUrl, {
             method: "GET",
