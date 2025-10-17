@@ -1,5 +1,5 @@
 # Fanvue Revenue Dashboard
-<!-- Force redeploy with latest fixes -->
+<!-- Force redeploy with latest fixes - Service account endpoints fixed -->
 
 A Next.js dashboard for tracking daily revenue split and earnings data from the Fanvue API.
 
