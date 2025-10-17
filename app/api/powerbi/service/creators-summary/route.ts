@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
     console.log(`Date range: ${startDate} to ${endDate}`);
 
     // Step 1: Fetch all creators using service account OAuth
-    const creatorsUrl = `https://api.fanvue.com/agencies/creators?size=50`;
+    const creatorsUrl = `https://api.fanvue.com/creators?size=50`;
     console.log(`Fetching creators from: ${creatorsUrl}`);
     
     const creatorsResponse = await makeServiceAuthenticatedRequest(creatorsUrl, {

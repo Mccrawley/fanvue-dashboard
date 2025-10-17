@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
       creators = [{ uuid: creatorIdFilter, displayName: 'Filtered Creator', handle: 'filtered' }];
     } else {
       // Fetch all creators using service account OAuth
-      const creatorsUrl = `https://api.fanvue.com/agencies/creators?size=50`;
+      const creatorsUrl = `https://api.fanvue.com/creators?size=50`;
       console.log(`Fetching creators from: ${creatorsUrl}`);
       
       const creatorsResponse = await makeServiceAuthenticatedRequest(creatorsUrl, {

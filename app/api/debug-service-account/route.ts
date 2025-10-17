@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       try {
         console.log("Testing service account authentication...");
         
-        const creatorsUrl = "https://api.fanvue.com/agencies/creators?size=5";
+        const creatorsUrl = "https://api.fanvue.com/creators?size=5";
         const response = await fetch(creatorsUrl, {
           method: "GET",
           headers: {
