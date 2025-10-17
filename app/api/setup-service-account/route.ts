@@ -15,7 +15,7 @@ import { cookies } from "next/headers";
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     
     // Get OAuth tokens from cookies
     const accessToken = cookieStore.get('fanvue_access_token')?.value;
