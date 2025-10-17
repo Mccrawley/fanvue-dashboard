@@ -20,17 +20,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     
-    // Check for API key authentication (for Power BI)
-    const apiKey = searchParams.get("apiKey");
-    const expectedApiKey = process.env.POWERBI_API_KEY;
-    
-    let useApiKey = false;
-    if (apiKey && expectedApiKey && apiKey === expectedApiKey) {
-      useApiKey = true;
-      console.log("Using API key authentication for Power BI");
-    } else {
-      console.log("Using OAuth authentication");
-    }
+    // Use OAuth authentication only
+    console.log("Using OAuth authentication");
 
     // Default to last 30 days if no date range provided
     const defaultEndDate = new Date();
@@ -40,41 +31,16 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get("startDate") || defaultStartDate.toISOString().split('T')[0];
     const endDate = searchParams.get("endDate") || defaultEndDate.toISOString().split('T')[0];
 
-    console.log(`=== HYBRID POWER BI CREATORS SUMMARY REQUEST ===`);
-    console.log(`Authentication: ${useApiKey ? 'API Key' : 'OAuth'}`);
+    console.log(`=== OAuth POWER BI CREATORS SUMMARY REQUEST ===`);
     console.log(`Date range: ${startDate} to ${endDate}`);
 
-    // Step 1: Fetch all creators
+    // Step 1: Fetch all creators using OAuth
     const creatorsUrl = `https://api.fanvue.com/agencies/creators?size=50`;
     console.log(`Fetching creators from: ${creatorsUrl}`);
     
-    let creatorsResponse;
-    if (useApiKey) {
-      // Use API key authentication for Power BI
-      const apiKeyEnv = process.env.FANVUE_API_KEY;
-      const apiVersion = process.env.FANVUE_API_VERSION || "2025-06-26";
-      
-      if (!apiKeyEnv) {
-        return NextResponse.json(
-          { error: "Fanvue API key not configured" },
-          { status: 500 }
-        );
-      }
-
-      creatorsResponse = await fetch(creatorsUrl, {
-        method: "GET",
-        headers: {
-          "X-Fanvue-API-Key": apiKeyEnv,
-          "X-Fanvue-API-Version": apiVersion,
-          "Content-Type": "application/json",
-        },
-      });
-    } else {
-      // Use OAuth authentication for browser
-      creatorsResponse = await makeAuthenticatedRequest(creatorsUrl, {
-        method: "GET",
-      });
-    }
+    const creatorsResponse = await makeAuthenticatedRequest(creatorsUrl, {
+      method: "GET",
+    });
 
     if (!creatorsResponse.ok) {
       const errorText = await creatorsResponse.text();
@@ -99,61 +65,25 @@ export async function GET(request: NextRequest) {
 
         console.log(`Fetching stats for ${creatorName} (${creatorId})...`);
 
-        // Fetch earnings, followers, and subscribers in parallel
+        // Fetch earnings, followers, and subscribers in parallel using OAuth
         const [earningsRes, followersRes, subscribersRes] = await Promise.allSettled([
           // Earnings with date range
-          useApiKey ? 
-            fetch(
-              `https://api.fanvue.com/agencies/creators/${creatorId}/insights/earnings?startDate=${startDate}T00:00:00Z&endDate=${endDate}T23:59:59Z&size=50`,
-              {
-                method: "GET",
-                headers: {
-                  "X-Fanvue-API-Key": process.env.FANVUE_API_KEY!,
-                  "X-Fanvue-API-Version": process.env.FANVUE_API_VERSION || "2025-06-26",
-                  "Content-Type": "application/json",
-                },
-              }
-            ).catch(() => null) :
-            makeAuthenticatedRequest(
-              `https://api.fanvue.com/agencies/creators/${creatorId}/insights/earnings?startDate=${startDate}T00:00:00Z&endDate=${endDate}T23:59:59Z&size=50`,
-              { method: "GET" }
-            ).catch(() => null),
+          makeAuthenticatedRequest(
+            `https://api.fanvue.com/agencies/creators/${creatorId}/insights/earnings?startDate=${startDate}T00:00:00Z&endDate=${endDate}T23:59:59Z&size=50`,
+            { method: "GET" }
+          ).catch(() => null),
           
           // Followers (current count, not date-filtered)
-          useApiKey ?
-            fetch(
-              `https://api.fanvue.com/agencies/creators/${creatorId}/followers?size=50`,
-              {
-                method: "GET",
-                headers: {
-                  "X-Fanvue-API-Key": process.env.FANVUE_API_KEY!,
-                  "X-Fanvue-API-Version": process.env.FANVUE_API_VERSION || "2025-06-26",
-                  "Content-Type": "application/json",
-                },
-              }
-            ).catch(() => null) :
-            makeAuthenticatedRequest(
-              `https://api.fanvue.com/agencies/creators/${creatorId}/followers?size=50`,
-              { method: "GET" }
-            ).catch(() => null),
+          makeAuthenticatedRequest(
+            `https://api.fanvue.com/agencies/creators/${creatorId}/followers?size=50`,
+            { method: "GET" }
+          ).catch(() => null),
           
           // Subscribers (current count, not date-filtered)
-          useApiKey ?
-            fetch(
-              `https://api.fanvue.com/agencies/creators/${creatorId}/subscribers?size=50`,
-              {
-                method: "GET",
-                headers: {
-                  "X-Fanvue-API-Key": process.env.FANVUE_API_KEY!,
-                  "X-Fanvue-API-Version": process.env.FANVUE_API_VERSION || "2025-06-26",
-                  "Content-Type": "application/json",
-                },
-              }
-            ).catch(() => null) :
-            makeAuthenticatedRequest(
-              `https://api.fanvue.com/agencies/creators/${creatorId}/subscribers?size=50`,
-              { method: "GET" }
-            ).catch(() => null)
+          makeAuthenticatedRequest(
+            `https://api.fanvue.com/agencies/creators/${creatorId}/subscribers?size=50`,
+            { method: "GET" }
+          ).catch(() => null)
         ]);
 
         // Process earnings
@@ -230,7 +160,7 @@ export async function GET(request: NextRequest) {
         endDate,
         totalCreators: successfulSummaries.length,
         apiVersion: "1.0",
-        authentication: useApiKey ? "apiKey" : "oauth"
+        authentication: "oauth"
       },
       data: successfulSummaries
     });

@@ -21,17 +21,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     
-    // Check for API key authentication (for Power BI)
-    const apiKey = searchParams.get("apiKey");
-    const expectedApiKey = process.env.POWERBI_API_KEY;
-    
-    let useApiKey = false;
-    if (apiKey && expectedApiKey && apiKey === expectedApiKey) {
-      useApiKey = true;
-      console.log("Using API key authentication for Power BI");
-    } else {
-      console.log("Using OAuth authentication");
-    }
+    // Use OAuth authentication only
+    console.log("Using OAuth authentication");
 
     // Default to last 30 days if no date range provided
     const defaultEndDate = new Date();
@@ -42,8 +33,7 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get("endDate") || defaultEndDate.toISOString().split('T')[0];
     const creatorIdFilter = searchParams.get("creatorId");
 
-    console.log(`=== HYBRID POWER BI EARNINGS DETAIL REQUEST ===`);
-    console.log(`Authentication: ${useApiKey ? 'API Key' : 'OAuth'}`);
+    console.log(`=== OAuth POWER BI EARNINGS DETAIL REQUEST ===`);
     console.log(`Date range: ${startDate} to ${endDate}`);
     if (creatorIdFilter) console.log(`Creator filter: ${creatorIdFilter}`);
 
@@ -54,37 +44,13 @@ export async function GET(request: NextRequest) {
       // Fetch single creator data
       creators = [{ uuid: creatorIdFilter, displayName: 'Filtered Creator', handle: 'filtered' }];
     } else {
-      // Fetch all creators
+      // Fetch all creators using OAuth
       const creatorsUrl = `https://api.fanvue.com/agencies/creators?size=50`;
       console.log(`Fetching creators from: ${creatorsUrl}`);
       
-      let creatorsResponse;
-      if (useApiKey) {
-        // Use API key authentication for Power BI
-        const apiKeyEnv = process.env.FANVUE_API_KEY;
-        const apiVersion = process.env.FANVUE_API_VERSION || "2025-06-26";
-        
-        if (!apiKeyEnv) {
-          return NextResponse.json(
-            { error: "Fanvue API key not configured" },
-            { status: 500 }
-          );
-        }
-
-        creatorsResponse = await fetch(creatorsUrl, {
-          method: "GET",
-          headers: {
-            "X-Fanvue-API-Key": apiKeyEnv,
-            "X-Fanvue-API-Version": apiVersion,
-            "Content-Type": "application/json",
-          },
-        });
-      } else {
-        // Use OAuth authentication for browser
-        creatorsResponse = await makeAuthenticatedRequest(creatorsUrl, {
-          method: "GET",
-        });
-      }
+      const creatorsResponse = await makeAuthenticatedRequest(creatorsUrl, {
+        method: "GET",
+      });
 
       if (!creatorsResponse.ok) {
         const errorText = await creatorsResponse.text();
@@ -127,23 +93,9 @@ export async function GET(request: NextRequest) {
 
           const earningsUrl = `https://api.fanvue.com/agencies/creators/${creatorId}/insights/earnings?${queryParams}`;
           
-          let earningsResponse;
-          if (useApiKey) {
-            // Use API key authentication for Power BI
-            earningsResponse = await fetch(earningsUrl, {
-              method: "GET",
-              headers: {
-                "X-Fanvue-API-Key": process.env.FANVUE_API_KEY!,
-                "X-Fanvue-API-Version": process.env.FANVUE_API_VERSION || "2025-06-26",
-                "Content-Type": "application/json",
-              },
-            });
-          } else {
-            // Use OAuth authentication for browser
-            earningsResponse = await makeAuthenticatedRequest(earningsUrl, {
-              method: "GET",
-            });
-          }
+          const earningsResponse = await makeAuthenticatedRequest(earningsUrl, {
+            method: "GET",
+          });
 
           if (!earningsResponse.ok) {
             console.log(`  Failed to fetch earnings: ${earningsResponse.status}`);
@@ -204,7 +156,7 @@ export async function GET(request: NextRequest) {
         totalTransactions: allTransactions.length,
         totalCreators: creators.length,
         apiVersion: "1.0",
-        authentication: useApiKey ? "apiKey" : "oauth"
+        authentication: "oauth"
       },
       data: allTransactions
     });
