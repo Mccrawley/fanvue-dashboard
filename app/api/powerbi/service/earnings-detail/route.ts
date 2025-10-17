@@ -49,7 +49,7 @@ async function makeServiceAuthenticatedRequest(url: string, options: RequestInit
   if (response.status === 401 && SERVICE_ACCOUNT_TOKENS.refreshToken) {
     console.log("Access token expired, attempting refresh...");
     
-    // Try to refresh the token
+    // Try to refresh the token using client_secret_basic
     const refreshResponse = await fetch("https://api.fanvue.com/oauth/token", {
       method: "POST",
       headers: {
