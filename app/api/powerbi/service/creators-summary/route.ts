@@ -54,7 +54,7 @@ async function makeServiceAuthenticatedRequest(url: string, options: RequestInit
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        "Authorization": `Basic ${Buffer.from(`${process.env.FANVUE_CLIENT_ID}:${process.env.FANVUE_CLIENT_SECRET}`).toString('base64')}`,
+        "Authorization": `Basic ${Buffer.from(`${process.env.FANVUE_CLIENT_ID}:${process.env.FANVUE_OAUTH_CLIENT_SECRET}`).toString('base64')}`,
       },
       body: new URLSearchParams({
         grant_type: "refresh_token",
