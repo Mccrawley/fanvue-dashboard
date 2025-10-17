@@ -1,24 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
-  try {
-    // Simple test endpoint that doesn't require external API calls
-    const testData = {
-      message: "Test endpoint working!",
-      timestamp: new Date().toISOString(),
-      environment: {
-        hasApiKey: !!process.env.FANVUE_API_KEY,
-        hasApiVersion: !!process.env.FANVUE_API_VERSION,
-        nodeEnv: process.env.NODE_ENV
-      }
-    };
-
-    return NextResponse.json(testData);
-  } catch (error: any) {
-    console.error("Test endpoint error:", error);
-    return NextResponse.json(
-      { error: error.message || "Test endpoint failed" },
-      { status: 500 }
-    );
-  }
+export async function GET(request: NextRequest) {
+  return NextResponse.json({
+    message: "Test endpoint working",
+    timestamp: new Date().toISOString(),
+    environment: {
+      nodeEnv: process.env.NODE_ENV,
+      vercelEnv: process.env.VERCEL_ENV,
+      hasFanvueApiKey: !!process.env.FANVUE_API_KEY,
+      hasPowerbiApiKey: !!process.env.POWERBI_API_KEY,
+    }
+  });
 }
