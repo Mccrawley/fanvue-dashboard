@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     // Get service account tokens from environment
     const serviceAccessToken = process.env.SERVICE_ACCESS_TOKEN;
     const serviceRefreshToken = process.env.SERVICE_REFRESH_TOKEN;
-    const clientId = process.env.FANVUE_CLIENT_ID;
+    const clientId = process.env.FANVUE_OAUTH_CLIENT_ID;
     const clientSecret = process.env.FANVUE_OAUTH_CLIENT_SECRET;
 
     const debugInfo: any = {
