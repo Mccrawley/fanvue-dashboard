@@ -40,10 +40,32 @@ async function makeServiceAuthenticatedRequest(url: string, options: RequestInit
     "Content-Type": "application/json",
   };
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
+  // Add timeout to prevent hanging requests (8 seconds per individual request)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+  let response: Response;
+  
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      console.error(`Request timeout for ${url}`);
+      // Return a synthetic error response
+      return new Response(JSON.stringify({ error: 'Request timeout' }), {
+        status: 408,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    throw error;
+  }
 
   // If token expired, try to refresh
   if (response.status === 401 && SERVICE_ACCOUNT_TOKENS.refreshToken) {
@@ -114,31 +136,55 @@ export async function GET(request: NextRequest) {
     console.log(`=== SERVICE ACCOUNT POWER BI CREATORS SUMMARY REQUEST ===`);
     console.log(`Date range: ${startDate} to ${endDate}`);
 
-    // Step 1: Fetch all creators using service account OAuth
-    const creatorsUrl = `https://api.fanvue.com/creators?size=50`;
-    console.log(`Fetching creators from: ${creatorsUrl}`);
+    // Step 1: Fetch all creators using service account OAuth with pagination
+    let allCreators: any[] = [];
+    let hasMoreCreators = true;
+    let creatorPage = 1;
+    const maxCreatorPages = 2; // Limit to prevent initial timeout
     
-    const creatorsResponse = await makeServiceAuthenticatedRequest(creatorsUrl, {
-      method: "GET",
-    });
+    while (hasMoreCreators && creatorPage <= maxCreatorPages) {
+      const creatorsUrl = `https://api.fanvue.com/creators?size=50&page=${creatorPage}`;
+      console.log(`Fetching creators page ${creatorPage} from: ${creatorsUrl}`);
+      
+      const creatorsResponse = await makeServiceAuthenticatedRequest(creatorsUrl, {
+        method: "GET",
+      });
 
-    if (!creatorsResponse.ok) {
-      const errorText = await creatorsResponse.text();
-      console.error("Failed to fetch creators:", creatorsResponse.status, errorText);
-      return NextResponse.json(
-        { error: `Failed to fetch creators: ${creatorsResponse.status}` },
-        { status: creatorsResponse.status }
-      );
+      if (!creatorsResponse.ok) {
+        const errorText = await creatorsResponse.text();
+        console.error("Failed to fetch creators:", creatorsResponse.status, errorText);
+        return NextResponse.json(
+          { error: `Failed to fetch creators: ${creatorsResponse.status}` },
+          { status: creatorsResponse.status }
+        );
+      }
+
+      const creatorsData = await creatorsResponse.json();
+      const pageCreators = creatorsData.data || [];
+      allCreators = [...allCreators, ...pageCreators];
+      
+      hasMoreCreators = creatorsData.pagination?.hasMore || false;
+      creatorPage++;
+      
+      // Small delay to be rate-limit friendly
+      if (hasMoreCreators && creatorPage <= maxCreatorPages) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
     }
-
-    const creatorsData = await creatorsResponse.json();
-    const creators = creatorsData.data || [];
     
+    const creators = allCreators;
     console.log(`✅ Found ${creators.length} creators`);
 
-    // Step 2: Fetch detailed stats for each creator
-    const creatorSummaries = await Promise.allSettled(
-      creators.map(async (creator: any) => {
+    // Step 2: Fetch detailed stats for each creator IN BATCHES to prevent timeout
+    const BATCH_SIZE = 5; // Process 5 creators at a time
+    const creatorSummaries: any[] = [];
+    
+    for (let i = 0; i < creators.length; i += BATCH_SIZE) {
+      const batch = creators.slice(i, i + BATCH_SIZE);
+      console.log(`Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(creators.length / BATCH_SIZE)} (${batch.length} creators)`);
+      
+      const batchResults = await Promise.allSettled(
+        batch.map(async (creator: any) => {
         const creatorId = creator.uuid;
         const creatorName = creator.displayName || 'Unknown';
         const creatorHandle = creator.handle || 'unknown';
@@ -223,7 +269,16 @@ export async function GET(request: NextRequest) {
           lastUpdated: new Date().toISOString()
         };
       })
-    );
+      );
+      
+      // Add batch results to main array
+      creatorSummaries.push(...batchResults);
+      
+      // Small delay between batches to prevent rate limiting
+      if (i + BATCH_SIZE < creators.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
 
     // Filter out failed requests and extract successful data
     const successfulSummaries = creatorSummaries

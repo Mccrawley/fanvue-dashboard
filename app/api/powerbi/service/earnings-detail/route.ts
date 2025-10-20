@@ -40,10 +40,32 @@ async function makeServiceAuthenticatedRequest(url: string, options: RequestInit
     "Content-Type": "application/json",
   };
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
+  // Add timeout to prevent hanging requests (8 seconds per individual request)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+  let response: Response;
+  
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      console.error(`Request timeout for ${url}`);
+      // Return a synthetic error response
+      return new Response(JSON.stringify({ error: 'Request timeout' }), {
+        status: 408,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    throw error;
+  }
 
   // If token expired, try to refresh
   if (response.status === 401 && SERVICE_ACCOUNT_TOKENS.refreshToken) {
@@ -146,15 +168,21 @@ export async function GET(request: NextRequest) {
       console.log(`✅ Found ${creators.length} creators`);
     }
 
-    // Step 2: Fetch REAL earnings for each creator
+    // Step 2: Fetch REAL earnings for each creator IN BATCHES to prevent timeout
     const allTransactions: any[] = [];
+    const BATCH_SIZE = 3; // Process 3 creators at a time (each may have multiple pages)
 
-    for (const creator of creators) {
-      const creatorId = creator.uuid;
-      const creatorName = creator.displayName || 'Unknown';
-      const creatorHandle = creator.handle || 'unknown';
+    for (let batchStart = 0; batchStart < creators.length; batchStart += BATCH_SIZE) {
+      const batch = creators.slice(batchStart, batchStart + BATCH_SIZE);
+      console.log(`Processing creator batch ${Math.floor(batchStart / BATCH_SIZE) + 1}/${Math.ceil(creators.length / BATCH_SIZE)} (${batch.length} creators)`);
 
-      console.log(`Fetching REAL earnings for ${creatorName} (${creatorId})...`);
+      // Process creators in this batch sequentially to avoid overwhelming the API
+      for (const creator of batch) {
+        const creatorId = creator.uuid;
+        const creatorName = creator.displayName || 'Unknown';
+        const creatorHandle = creator.handle || 'unknown';
+
+        console.log(`Fetching REAL earnings for ${creatorName} (${creatorId})...`);
 
       try {
         // Fetch earnings with pagination
@@ -223,6 +251,12 @@ export async function GET(request: NextRequest) {
         console.error(`  Error fetching earnings for ${creatorName}:`, error);
       }
     }
+    
+    // Small delay between batches to prevent rate limiting
+    if (batchStart + BATCH_SIZE < creators.length) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
 
     console.log(`✅ Total REAL transactions collected: ${allTransactions.length}`);
 

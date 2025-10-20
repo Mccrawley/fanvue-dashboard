@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "functions": {
+    "app/api/powerbi/**/*.ts": {
+      "maxDuration": 60
+    },
+    "app/api/creators/**/*.ts": {
+      "maxDuration": 30
+    }
+  }
+}
+
